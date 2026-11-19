@@ -1,4 +1,6 @@
-export const CATEGORY_LABELS = {
+import type { RecurrenceRule, ServiceCategory } from '../types/reminder';
+
+export const CATEGORY_LABELS: Record<ServiceCategory, string> = {
   banking: 'Personal Banking',
   credit_card: 'Credit Card',
   loan_emi: 'Loan & EMI',
@@ -9,7 +11,7 @@ export const CATEGORY_LABELS = {
   other: 'Others',
 };
 
-export const RECURRENCE_LABELS = {
+export const RECURRENCE_LABELS: Record<RecurrenceRule, string> = {
   none: 'One-time window',
   monthly: 'Repeats monthly',
   quarterly: 'Repeats quarterly',

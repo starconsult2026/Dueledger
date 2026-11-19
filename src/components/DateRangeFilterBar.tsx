@@ -7,9 +7,10 @@ import {
   View,
 } from 'react-native';
 import { COLORS, FONTS } from '../theme/tokens';
+import type { DateRangePreset } from '../types/reminder';
 import { DateField } from './DateField';
 
-const PRESETS = [
+const PRESETS: Array<{ id: DateRangePreset; label: string }> = [
   { id: 'all', label: 'All Dates' },
   { id: 'active_now', label: 'Active Now' },
   { id: 'next_7_days', label: 'Next 7 Days' },
@@ -17,7 +18,18 @@ const PRESETS = [
   { id: 'custom', label: 'Custom Range' },
 ];
 
-export const DateRangeFilterBar = ({
+export interface DateRangeFilterBarProps {
+  preset: DateRangePreset;
+  onPresetChange: (preset: DateRangePreset) => void;
+  customStart: string;
+  customEnd: string;
+  onCustomStartChange: (dateStr: string) => void;
+  onCustomEndChange: (dateStr: string) => void;
+  showCompleted: boolean;
+  onToggleShowCompleted: () => void;
+}
+
+export const DateRangeFilterBar: React.FC<DateRangeFilterBarProps> = ({
   preset,
   onPresetChange,
   customStart,
@@ -35,22 +47,24 @@ export const DateRangeFilterBar = ({
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.presetTrack}
         >
-        {PRESETS.map((item) => {
-          const active = preset === item.id;
-          return (
-            <Pressable
-              key={item.id}
-              onPress={() => onPresetChange(item.id)}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: active }}
-              style={[styles.presetBtn, active && styles.presetBtnActive]}
-            >
-              <Text style={[styles.presetText, active && styles.presetTextActive]}>
-                {item.label}
-              </Text>
-            </Pressable>
-          );
-        })}
+          {PRESETS.map((item) => {
+            const active = preset === item.id;
+            return (
+              <Pressable
+                key={item.id}
+                onPress={() => onPresetChange(item.id)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: active }}
+                style={[styles.presetBtn, active && styles.presetBtnActive]}
+              >
+                <Text
+                  style={[styles.presetText, active && styles.presetTextActive]}
+                >
+                  {item.label}
+                </Text>
+              </Pressable>
+            );
+          })}
         </ScrollView>
 
         <Pressable

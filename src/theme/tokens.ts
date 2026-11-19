@@ -25,7 +25,7 @@ export const COLORS = {
   emeraldBorder: '#A7F3D0',
   white: '#FFFFFF',
   overlay: 'rgba(15, 23, 42, 0.5)',
-};
+} as const;
 
 export const FONTS = {
   display: Platform.select({

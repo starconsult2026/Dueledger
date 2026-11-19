@@ -12,7 +12,10 @@ import { BottomNav } from './components/BottomNav';
 import { ConfirmModal } from './components/ConfirmModal';
 import { DateRangeFilterBar } from './components/DateRangeFilterBar';
 import { DateRangeTimeline } from './components/DateRangeTimeline';
-import { ListSearchAndCategoryBar } from './components/ListSearchAndCategoryBar';
+import {
+  type CategoryFilter,
+  ListSearchAndCategoryBar,
+} from './components/ListSearchAndCategoryBar';
 import { NotificationCenter } from './components/NotificationCenter';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { PWAInstallButton } from './components/PWAInstallButton';
@@ -24,6 +27,16 @@ import { SummaryStrip } from './components/SummaryStrip';
 import { TopBar } from './components/TopBar';
 import { CATEGORY_LABELS } from './constants/reminder';
 import { COLORS, FONTS } from './theme/tokens';
+import type {
+  AppSettings,
+  AppTab,
+  DateRangePreset,
+  NotificationLog,
+  NotificationPermissionState,
+  Reminder,
+  ReminderInput,
+  ServiceCategory,
+} from './types/reminder';
 import {
   addDaysToDateString,
   advanceDateByRecurrence,
@@ -35,7 +48,9 @@ import {
   dispatchLocalPushNotification,
   evaluateAndDispatchAlerts,
   getNotificationPermission,
+  getNotificationPermissionAsync,
   requestNotificationPermission,
+  syncScheduledReminderNotifications,
 } from './utils/notifications';
 import {
   createStarterReminders,
@@ -46,32 +61,45 @@ import {
   saveSettings,
 } from './utils/storage';
 
-export default function App() {
+interface ConfirmState {
+  open: boolean;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  destructive: boolean;
+  action: () => void;
+}
+
+export default function App(): React.ReactElement {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTabletOrUp = width >= 768;
 
   const [loaded, setLoaded] = useState(false);
-  const [reminders, setReminders] = useState([]);
-  const [logs, setLogs] = useState([]);
-  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
-  const [permission, setPermission] = useState(() => getNotificationPermission());
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [logs, setLogs] = useState<NotificationLog[]>([]);
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [permission, setPermission] = useState<NotificationPermissionState>(() =>
+    getNotificationPermission()
+  );
 
-  const [activeTab, setActiveTab] = useState('reminders');
-  const [preset, setPreset] = useState('all');
-  const [customStart, setCustomStart] = useState(() => toLocalDateString(new Date()));
+  const [activeTab, setActiveTab] = useState<AppTab>('reminders');
+  const [preset, setPreset] = useState<DateRangePreset>('all');
+  const [customStart, setCustomStart] = useState(() =>
+    toLocalDateString(new Date())
+  );
   const [customEnd, setCustomEnd] = useState(() =>
     addDaysToDateString(toLocalDateString(new Date()), 14)
   );
-  const [category, setCategory] = useState('all');
+  const [category, setCategory] = useState<CategoryFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showCompleted, setShowCompleted] = useState(true);
 
   const [formOpen, setFormOpen] = useState(false);
-  const [editingReminder, setEditingReminder] = useState(null);
-  const [toastMessage, setToastMessage] = useState(null);
+  const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const [confirmState, setConfirmState] = useState({
+  const [confirmState, setConfirmState] = useState<ConfirmState>({
     open: false,
     title: '',
     description: '',
@@ -80,7 +108,7 @@ export default function App() {
     action: () => {},
   });
 
-  const showToast = useCallback((msg) => {
+  const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
   }, []);
 
@@ -92,36 +120,45 @@ export default function App() {
 
   useEffect(() => {
     let mounted = true;
-    loadAppState().then((state) => {
-      if (!mounted) return;
-      setReminders(state.reminders);
-      setLogs(state.logs);
-      setSettings(state.settings);
-      setLoaded(true);
-    });
+    void Promise.all([loadAppState(), getNotificationPermissionAsync()]).then(
+      ([state, currentPermission]) => {
+        if (!mounted) return;
+        setReminders(state.reminders);
+        setLogs(state.logs);
+        setSettings(state.settings);
+        setPermission(currentPermission);
+        setLoaded(true);
+      }
+    );
     return () => {
       mounted = false;
     };
   }, []);
 
-  const persistReminders = useCallback((next) => {
+  const persistReminders = useCallback((next: Reminder[]) => {
     setReminders(next);
     void saveReminders(next);
   }, []);
 
-  const persistLogs = useCallback((next) => {
+  const persistLogs = useCallback((next: NotificationLog[]) => {
     setLogs(next);
     void saveNotificationLogs(next);
   }, []);
 
-  const persistSettings = useCallback((next) => {
+  const persistSettings = useCallback((next: AppSettings) => {
     setSettings(next);
     void saveSettings(next);
   }, []);
 
+  useEffect(() => {
+    if (!loaded) return;
+    void syncScheduledReminderNotifications(reminders, settings.pushEnabled);
+  }, [loaded, reminders, settings.pushEnabled, permission]);
+
   const runWindowNotificationCheck = useCallback(
     async (silent = false) => {
-      if (getNotificationPermission() !== 'granted') {
+      const currentPerm = await getNotificationPermissionAsync();
+      if (currentPerm !== 'granted') {
         if (!silent) {
           showToast('Enable push notifications first to receive device alerts.');
         }
@@ -151,9 +188,11 @@ export default function App() {
       void runWindowNotificationCheck(true);
     }
     const interval = setInterval(() => {
-      if (getNotificationPermission() === 'granted' && settings.pushEnabled) {
-        void runWindowNotificationCheck(true);
-      }
+      void getNotificationPermissionAsync().then((currentPerm) => {
+        if (currentPerm === 'granted' && settings.pushEnabled) {
+          void runWindowNotificationCheck(true);
+        }
+      });
     }, 15 * 60 * 1000);
     return () => clearInterval(interval);
   }, [
@@ -170,7 +209,9 @@ export default function App() {
     if (result === 'granted') {
       showToast('Push notifications enabled for this device.');
     } else if (result === 'denied') {
-      showToast('Notifications blocked. Please allow them in browser settings.');
+      showToast(
+        'Notifications blocked. Please allow them in browser settings.'
+      );
     }
   };
 
@@ -181,7 +222,7 @@ export default function App() {
       `test-${Date.now()}`
     );
     if (ok) {
-      const item = {
+      const item: NotificationLog = {
         id: `test-${Date.now()}`,
         reminderId: 'manual-test',
         title: 'DueLedger Push Test',
@@ -197,7 +238,7 @@ export default function App() {
     }
   };
 
-  const handleSaveReminder = (data) => {
+  const handleSaveReminder = (data: ReminderInput) => {
     const now = new Date().toISOString();
     if (editingReminder) {
       const next = reminders.map((r) =>
@@ -206,7 +247,7 @@ export default function App() {
       persistReminders(next);
       showToast('Reminder updated.');
     } else {
-      const created = {
+      const created: Reminder = {
         ...data,
         id: `rem-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         completed: false,
@@ -220,7 +261,7 @@ export default function App() {
     setEditingReminder(null);
   };
 
-  const handleToggleComplete = (id) => {
+  const handleToggleComplete = (id: string) => {
     const now = new Date().toISOString();
     const next = reminders.map((r) => {
       if (r.id !== id) return r;
@@ -235,7 +276,7 @@ export default function App() {
     persistReminders(next);
   };
 
-  const handleAdvanceCycle = (id) => {
+  const handleAdvanceCycle = (id: string) => {
     const now = new Date().toISOString();
     const next = reminders.map((r) => {
       if (r.id !== id || r.recurrence === 'none') return r;
@@ -252,7 +293,7 @@ export default function App() {
     showToast('Advanced reminder to next recurring date window.');
   };
 
-  const handleDeletePrompt = (reminder) => {
+  const handleDeletePrompt = (reminder: Reminder) => {
     setConfirmState({
       open: true,
       title: `Delete "${reminder.title}"?`,
@@ -267,7 +308,7 @@ export default function App() {
     });
   };
 
-  const handleMarkCalendarSynced = (id) => {
+  const handleMarkCalendarSynced = (id: string) => {
     const now = new Date().toISOString();
     persistReminders(
       reminders.map((r) => (r.id === id ? { ...r, calendarSyncedAt: now } : r))
@@ -330,7 +371,7 @@ export default function App() {
   ]);
 
   const { categoryCounts, visibleBaseCount } = useMemo(() => {
-    const counts = {};
+    const counts: Partial<Record<ServiceCategory, number>> = {};
     let total = 0;
     const q = searchQuery.trim().toLowerCase();
     for (const r of reminders) {
@@ -404,17 +445,23 @@ export default function App() {
                 </Text>
                 {permission !== 'granted' && permission !== 'unsupported' ? (
                   <Pressable
-                    onPress={handleRequestPermission}
+                    onPress={() => {
+                      void handleRequestPermission();
+                    }}
                     style={styles.sideDarkBtn}
                   >
-                    <Text style={styles.sideDarkBtnText}>Enable Device Alerts</Text>
+                    <Text style={styles.sideDarkBtnText}>
+                      Enable Device Alerts
+                    </Text>
                   </Pressable>
                 ) : (
                   <Pressable
                     onPress={() => setActiveTab('alerts')}
                     style={styles.sideOutlineBtn}
                   >
-                    <Text style={styles.sideOutlineBtnText}>Manage Alert Rules</Text>
+                    <Text style={styles.sideOutlineBtnText}>
+                      Manage Alert Rules
+                    </Text>
                   </Pressable>
                 )}
               </View>
@@ -436,7 +483,9 @@ export default function App() {
               <View style={styles.sectionStack}>
                 {!isDesktop && (
                   <View>
-                    <Text style={styles.mobileHeading}>Bank & Service Windows</Text>
+                    <Text style={styles.mobileHeading}>
+                      Bank & Service Windows
+                    </Text>
                     <Text style={styles.mobileSub}>
                       Date-range reminders with push alerts & calendar export
                     </Text>
@@ -457,10 +506,14 @@ export default function App() {
                       </View>
                     </View>
                     <Pressable
-                      onPress={handleRequestPermission}
+                      onPress={() => {
+                        void handleRequestPermission();
+                      }}
                       style={styles.permBtn}
                     >
-                      <Text style={styles.permBtnText}>Enable Notifications</Text>
+                      <Text style={styles.permBtnText}>
+                        Enable Notifications
+                      </Text>
                     </Pressable>
                   </View>
                 )}
@@ -509,7 +562,9 @@ export default function App() {
 
                 {!loaded ? (
                   <View style={styles.emptyCard}>
-                    <Text style={styles.emptySub}>Loading local reminders...</Text>
+                    <Text style={styles.emptySub}>
+                      Loading local reminders...
+                    </Text>
                   </View>
                 ) : filteredReminders.length === 0 ? (
                   <View style={styles.emptyCard}>
@@ -568,14 +623,18 @@ export default function App() {
                 pushEnabled={settings.pushEnabled}
                 reminders={reminders}
                 logs={logs}
-                onRequestPermission={handleRequestPermission}
+                onRequestPermission={() => {
+                  void handleRequestPermission();
+                }}
                 onTogglePushEnabled={() =>
                   persistSettings({
                     ...settings,
                     pushEnabled: !settings.pushEnabled,
                   })
                 }
-                onSendTestNotification={handleSendTestNotification}
+                onSendTestNotification={() => {
+                  void handleSendTestNotification();
+                }}
                 onRunWindowCheck={() => void runWindowNotificationCheck(false)}
                 onClearLogs={() => persistLogs([])}
               />

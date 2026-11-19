@@ -3,7 +3,18 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { COLORS, FONTS } from '../theme/tokens';
 import { CloseIcon, GlyphIcon } from './RNIcons';
 
-export const ConfirmModal = ({
+export interface ConfirmModalProps {
+  open: boolean;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  cancelLabel?: string;
+  destructive?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   open,
   title,
   description,

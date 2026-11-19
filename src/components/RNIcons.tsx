@@ -1,7 +1,19 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-export const PlusIcon = ({ color = '#FFFFFF', size = 18 }) => (
+export interface IconProps {
+  color?: string;
+  size?: number;
+}
+
+export interface GlyphIconProps extends IconProps {
+  symbol: string;
+}
+
+export const PlusIcon: React.FC<IconProps> = ({
+  color = '#FFFFFF',
+  size = 18,
+}) => (
   <View style={[styles.center, { width: size, height: size }]}>
     <View
       style={{
@@ -24,7 +36,10 @@ export const PlusIcon = ({ color = '#FFFFFF', size = 18 }) => (
   </View>
 );
 
-export const CloseIcon = ({ color = '#64748B', size = 18 }) => (
+export const CloseIcon: React.FC<IconProps> = ({
+  color = '#64748B',
+  size = 18,
+}) => (
   <View style={[styles.center, { width: size, height: size }]}>
     <View
       style={{
@@ -49,7 +64,10 @@ export const CloseIcon = ({ color = '#64748B', size = 18 }) => (
   </View>
 );
 
-export const ListIcon = ({ color = '#475569', size = 18 }) => (
+export const ListIcon: React.FC<IconProps> = ({
+  color = '#475569',
+  size = 18,
+}) => (
   <View
     style={{
       width: size,
@@ -58,13 +76,37 @@ export const ListIcon = ({ color = '#475569', size = 18 }) => (
       paddingVertical: 2,
     }}
   >
-    <View style={{ height: 2, width: size * 0.85, backgroundColor: color, borderRadius: 1 }} />
-    <View style={{ height: 2, width: size * 0.85, backgroundColor: color, borderRadius: 1 }} />
-    <View style={{ height: 2, width: size * 0.6, backgroundColor: color, borderRadius: 1 }} />
+    <View
+      style={{
+        height: 2,
+        width: size * 0.85,
+        backgroundColor: color,
+        borderRadius: 1,
+      }}
+    />
+    <View
+      style={{
+        height: 2,
+        width: size * 0.85,
+        backgroundColor: color,
+        borderRadius: 1,
+      }}
+    />
+    <View
+      style={{
+        height: 2,
+        width: size * 0.6,
+        backgroundColor: color,
+        borderRadius: 1,
+      }}
+    />
   </View>
 );
 
-export const CalendarIcon = ({ color = '#0F766E', size = 18 }) => (
+export const CalendarIcon: React.FC<IconProps> = ({
+  color = '#0F766E',
+  size = 18,
+}) => (
   <View
     style={{
       width: size,
@@ -89,7 +131,10 @@ export const CalendarIcon = ({ color = '#0F766E', size = 18 }) => (
   </View>
 );
 
-export const BellIcon = ({ color = '#0F766E', size = 18 }) => (
+export const BellIcon: React.FC<IconProps> = ({
+  color = '#0F766E',
+  size = 18,
+}) => (
   <View style={[styles.center, { width: size, height: size }]}>
     <View
       style={{
@@ -124,7 +169,10 @@ export const BellIcon = ({ color = '#0F766E', size = 18 }) => (
   </View>
 );
 
-export const SettingsIcon = ({ color = '#475569', size = 18 }) => (
+export const SettingsIcon: React.FC<IconProps> = ({
+  color = '#475569',
+  size = 18,
+}) => (
   <View
     style={{
       width: size,
@@ -144,7 +192,10 @@ export const SettingsIcon = ({ color = '#475569', size = 18 }) => (
   </View>
 );
 
-export const SearchIcon = ({ color = '#94A3B8', size = 16 }) => (
+export const SearchIcon: React.FC<IconProps> = ({
+  color = '#94A3B8',
+  size = 16,
+}) => (
   <View style={[styles.center, { width: size, height: size }]}>
     <View
       style={{
@@ -173,7 +224,10 @@ export const SearchIcon = ({ color = '#94A3B8', size = 16 }) => (
   </View>
 );
 
-export const SmartphoneIcon = ({ color = '#0F766E', size = 16 }) => (
+export const SmartphoneIcon: React.FC<IconProps> = ({
+  color = '#0F766E',
+  size = 16,
+}) => (
   <View
     style={{
       width: size * 0.68,
@@ -186,11 +240,22 @@ export const SmartphoneIcon = ({ color = '#0F766E', size = 16 }) => (
       paddingBottom: 2,
     }}
   >
-    <View style={{ width: 4, height: 1.5, backgroundColor: color, borderRadius: 1 }} />
+    <View
+      style={{
+        width: 4,
+        height: 1.5,
+        backgroundColor: color,
+        borderRadius: 1,
+      }}
+    />
   </View>
 );
 
-export const GlyphIcon = ({ symbol, color = '#475569', size = 14 }) => (
+export const GlyphIcon: React.FC<GlyphIconProps> = ({
+  symbol,
+  color = '#475569',
+  size = 14,
+}) => (
   <Text
     style={{
       color,

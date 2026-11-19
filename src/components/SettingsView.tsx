@@ -1,7 +1,17 @@
 import React from 'react';
-import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  Linking,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { COLORS, FONTS } from '../theme/tokens';
-import { downloadIcsFile } from '../utils/calendarExport';
+import type { AppSettings, CurrencyCode, Reminder } from '../types/reminder';
+import { downloadIcsFile, generateIcsContent } from '../utils/calendarExport';
+import { toLocalDateString } from '../utils/dateRange';
+import { downloadZipFiles, triggerFileDownload } from '../utils/zipExport';
 import { PWAInstallButton } from './PWAInstallButton';
 import { CalendarIcon, GlyphIcon } from './RNIcons';
 
@@ -12,9 +22,19 @@ const LEAD_OPTIONS = [
   { day: 0, label: 'Due day' },
 ];
 
-const CURRENCY_OPTIONS = [{ code: 'INR', label: 'INR (₹ Rupees)' }];
+const CURRENCY_OPTIONS: Array<{ code: CurrencyCode; label: string }> = [
+  { code: 'INR', label: 'INR (₹ Rupees)' },
+];
 
-export const SettingsView = ({
+export interface SettingsViewProps {
+  settings: AppSettings;
+  reminders: Reminder[];
+  onUpdateSettings: (next: AppSettings) => void;
+  onResetDemoData: () => void;
+  onClearAllReminders: () => void;
+}
+
+export const SettingsView: React.FC<SettingsViewProps> = ({
   settings,
   reminders,
   onUpdateSettings,
@@ -33,33 +53,35 @@ export const SettingsView = ({
     origin
   )}`;
 
+  const buildTwaManifest = () => ({
+    packageId: 'app.dueledger.reminders',
+    host,
+    name: 'DueLedger',
+    launcherName: 'DueLedger',
+    display: 'standalone',
+    themeColor: '#0F766E',
+    themeColorDark: '#0F766E',
+    navigationColor: '#F8FAFC',
+    navigationColorDark: '#0F172A',
+    navigationDividerColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
+    enableNotifications: true,
+    startUrl: '/',
+    iconUrl: `${origin}/pwa-512x512.png`,
+    maskableIconUrl: `${origin}/pwa-maskable-512x512.png`,
+    splashScreenFadeOutDuration: 300,
+    appVersionName: '1.0.0',
+    appVersionCode: 1,
+    shortcuts: [],
+    fallbackType: 'customtabs',
+    enableSiteSettingsShortcut: 'true',
+    isChromeOSOnly: false,
+    webManifestUrl: `${origin}/manifest.webmanifest`,
+  });
+
   const handleDownloadTwaManifest = () => {
     if (Platform.OS !== 'web' || typeof document === 'undefined') return;
-    const twaManifest = {
-      packageId: 'app.dueledger.reminders',
-      host,
-      name: 'DueLedger',
-      launcherName: 'DueLedger',
-      display: 'standalone',
-      themeColor: '#0F766E',
-      themeColorDark: '#0F766E',
-      navigationColor: '#F8FAFC',
-      navigationColorDark: '#0F172A',
-      navigationDividerColor: '#E2E8F0',
-      backgroundColor: '#F8FAFC',
-      enableNotifications: true,
-      startUrl: '/',
-      iconUrl: `${origin}/pwa-512x512.png`,
-      maskableIconUrl: `${origin}/pwa-maskable-512x512.png`,
-      splashScreenFadeOutDuration: 300,
-      appVersionName: '1.0.0',
-      appVersionCode: 1,
-      shortcuts: [],
-      fallbackType: 'customtabs',
-      enableSiteSettingsShortcut: 'true',
-      isChromeOSOnly: false,
-      webManifestUrl: `${origin}/manifest.webmanifest`,
-    };
+    const twaManifest = buildTwaManifest();
 
     const blob = new Blob([JSON.stringify(twaManifest, null, 2)], {
       type: 'application/json;charset=utf-8',
@@ -74,7 +96,34 @@ export const SettingsView = ({
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
-  const toggleDefaultLead = (day) => {
+  const handleDownloadBackupZip = () => {
+    const today = toLocalDateString(new Date());
+    const entries = [
+      {
+        name: 'reminders.json',
+        content: JSON.stringify(reminders, null, 2),
+      },
+      {
+        name: 'settings.json',
+        content: JSON.stringify(settings, null, 2),
+      },
+      {
+        name: 'dueledger-all-reminders.ics',
+        content: generateIcsContent(reminders),
+      },
+      {
+        name: 'twa-manifest.json',
+        content: JSON.stringify(buildTwaManifest(), null, 2),
+      },
+    ];
+    downloadZipFiles(entries, `dueledger-backup-${today}.zip`);
+  };
+
+  const handleDownloadSourceZip = () => {
+    triggerFileDownload('/dueledger-source.zip', 'dueledger-source.zip');
+  };
+
+  const toggleDefaultLead = (day: number) => {
     const exists = settings.defaultLeadDays.includes(day);
     const next = exists
       ? settings.defaultLeadDays.filter((d) => d !== day)
@@ -97,7 +146,9 @@ export const SettingsView = ({
             onPress={() => Linking.openURL(pwabuilderUrl).catch(() => {})}
             style={styles.outlineBtn}
           >
-            <Text style={styles.outlineText}>Package APK via PWABuilder ↗</Text>
+            <Text style={styles.outlineText}>
+              Package APK via PWABuilder ↗
+            </Text>
           </Pressable>
 
           {Platform.OS === 'web' && (
@@ -108,23 +159,40 @@ export const SettingsView = ({
               <Text style={styles.mutedText}>Download twa-manifest.json</Text>
             </Pressable>
           )}
+
+          {Platform.OS === 'web' && (
+            <Pressable
+              onPress={handleDownloadSourceZip}
+              style={styles.mutedBtn}
+            >
+              <Text style={styles.mutedText}>Download App Source (.zip)</Text>
+            </Pressable>
+          )}
         </View>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.title}>Google Calendar Export & Backup</Text>
+        <Text style={styles.title}>Calendar & ZIP Backup Export</Text>
         <Text style={styles.subtitle}>
-          Download all {reminders.length} reminders as a standard .ics calendar file with built-in date-range alarms to import into Google Calendar.
+          Download all {reminders.length} reminders as a standard .ics calendar file or as a complete .zip archive (JSON + ICS + TWA manifest).
         </Text>
 
         {Platform.OS === 'web' && (
           <View style={styles.wrapRow}>
+            <Pressable onPress={handleDownloadBackupZip} style={styles.tealBtn}>
+              <Text style={styles.darkBtnText}>Download Backup (.zip)</Text>
+              <GlyphIcon symbol="↓" size={14} color={COLORS.white} />
+            </Pressable>
+
             <Pressable
               disabled={reminders.length === 0}
               onPress={() =>
                 downloadIcsFile(reminders, 'dueledger-all-reminders.ics')
               }
-              style={[styles.darkBtn, reminders.length === 0 && styles.disabledBtn]}
+              style={[
+                styles.darkBtn,
+                reminders.length === 0 && styles.disabledBtn,
+              ]}
             >
               <CalendarIcon size={15} color={COLORS.white} />
               <Text style={styles.darkBtnText}>
@@ -189,7 +257,7 @@ export const SettingsView = ({
       <View style={styles.card}>
         <Text style={styles.title}>Local Device Storage</Text>
         <Text style={styles.subtitle}>
-          Reminders are stored privately on your device so they remain available offline.
+          Reminders are stored privately on your device (SQLite on Android/iOS, IndexedDB on Web) so they remain available offline.
         </Text>
 
         <View style={styles.wrapRow}>
@@ -268,6 +336,15 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: COLORS.inkSecondary,
+  },
+  tealBtn: {
+    minHeight: 44,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: COLORS.teal,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   darkBtn: {
     minHeight: 44,

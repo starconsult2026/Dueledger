@@ -4,23 +4,40 @@
   "expo": {
     "name": "DueLedger — Reminders",
     "slug": "dueledger-reminders",
+    "scheme": "dueledger",
     "version": "1.0.0",
     "orientation": "portrait",
+    "platforms": ["ios", "android", "web"],
     "icon": "./public/pwa-512x512.png",
     "userInterfaceStyle": "light",
+    "newArchEnabled": true,
     "splash": {
+      "image": "./public/pwa-512x512.png",
+      "resizeMode": "contain",
       "backgroundColor": "#F8FAFC"
     },
+    "plugins": [
+      "expo-sqlite",
+      [
+        "expo-notifications",
+        {
+          "icon": "./public/pwa-192x192.png",
+          "color": "#0F766E"
+        }
+      ]
+    ],
     "android": {
       "package": "app.dueledger.reminders",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./public/pwa-maskable-512x512.png",
         "backgroundColor": "#0F766E"
       },
       "permissions": [
+        "POST_NOTIFICATIONS",
+        "SCHEDULE_EXACT_ALARM",
         "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE",
-        "POST_NOTIFICATIONS"
+        "VIBRATE"
       ]
     },
     "ios": {
@@ -28,6 +45,7 @@
       "supportsTablet": true
     },
     "web": {
+      "bundler": "metro",
       "favicon": "./public/pwa-192x192.png"
     }
   }

@@ -1,13 +1,27 @@
-import { formatCurrency, getReminderWindowMetrics, toLocalDateString } from './dateRange';
+import type {
+  NotificationLog,
+  NotificationPermissionState,
+  NotificationTriggerType,
+  Reminder,
+} from '../types/reminder';
+import {
+  formatCurrency,
+  getReminderWindowMetrics,
+  toLocalDateString,
+} from './dateRange';
 
-export function getNotificationPermission() {
+export function getNotificationPermission(): NotificationPermissionState {
   if (typeof window === 'undefined' || !('Notification' in window)) {
     return 'unsupported';
   }
   return Notification.permission;
 }
 
-export async function requestNotificationPermission() {
+export async function getNotificationPermissionAsync(): Promise<NotificationPermissionState> {
+  return getNotificationPermission();
+}
+
+export async function requestNotificationPermission(): Promise<NotificationPermissionState> {
   if (typeof window === 'undefined' || !('Notification' in window)) {
     return 'unsupported';
   }
@@ -18,7 +32,11 @@ export async function requestNotificationPermission() {
   }
 }
 
-export async function dispatchLocalPushNotification(title, body, tag) {
+export async function dispatchLocalPushNotification(
+  title: string,
+  body: string,
+  tag?: string
+): Promise<boolean> {
   if (typeof window === 'undefined' || !('Notification' in window)) {
     return false;
   }
@@ -26,7 +44,10 @@ export async function dispatchLocalPushNotification(title, body, tag) {
     return false;
   }
 
-  const options = {
+  const options: NotificationOptions & {
+    renotify?: boolean;
+    vibrate?: number[];
+  } = {
     body,
     icon: '/pwa-192x192.png',
     badge: '/pwa-192x192.png',
@@ -40,7 +61,7 @@ export async function dispatchLocalPushNotification(title, body, tag) {
     if ('serviceWorker' in navigator) {
       const registration = await Promise.race([
         navigator.serviceWorker.ready,
-        new Promise((resolve) => setTimeout(() => resolve(null), 1200)),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 1200)),
       ]);
       if (registration && 'showNotification' in registration) {
         await registration.showNotification(title, options);
@@ -59,7 +80,31 @@ export async function dispatchLocalPushNotification(title, body, tag) {
   }
 }
 
-export async function evaluateAndDispatchAlerts(reminders, existingLogs, pushEnabled) {
+export async function syncScheduledReminderNotifications(
+  reminders: Reminder[],
+  pushEnabled: boolean
+): Promise<number> {
+  if (!pushEnabled || getNotificationPermission() !== 'granted') {
+    return 0;
+  }
+  const now = new Date();
+  const todayStr = toLocalDateString(now);
+  let plannedCount = 0;
+  for (const r of reminders) {
+    if (r.completed) continue;
+    if (r.notifyOnStart && r.startDate >= todayStr) plannedCount += 1;
+    for (const lead of r.notifyDaysBefore) {
+      if (r.endDate >= todayStr && lead >= 0) plannedCount += 1;
+    }
+  }
+  return plannedCount;
+}
+
+export async function evaluateAndDispatchAlerts(
+  reminders: Reminder[],
+  existingLogs: NotificationLog[],
+  pushEnabled: boolean
+): Promise<NotificationLog[]> {
   if (!pushEnabled) return [];
 
   const todayKey = toLocalDateString(new Date());
@@ -67,7 +112,7 @@ export async function evaluateAndDispatchAlerts(reminders, existingLogs, pushEna
     existingLogs.map((log) => `${log.reminderId}:${log.triggerType}:${log.dateKey}`)
   );
 
-  const newlyTriggered = [];
+  const newlyTriggered: NotificationLog[] = [];
 
   for (const reminder of reminders) {
     if (reminder.completed) continue;
@@ -75,7 +120,7 @@ export async function evaluateAndDispatchAlerts(reminders, existingLogs, pushEna
     const amountLabel = formatCurrency(reminder.amount, reminder.currency);
     const amountSuffix = amountLabel ? ` · ${amountLabel}` : '';
 
-    let triggerType = null;
+    let triggerType: NotificationTriggerType | null = null;
     let title = '';
     let body = '';
 
@@ -83,7 +128,10 @@ export async function evaluateAndDispatchAlerts(reminders, existingLogs, pushEna
       triggerType = 'overdue';
       title = `Overdue: ${reminder.title}`;
       body = `${reminder.provider}${amountSuffix} window closed on ${reminder.endDate}.`;
-    } else if (metrics.daysRemaining === 0 && reminder.notifyDaysBefore.includes(0)) {
+    } else if (
+      metrics.daysRemaining === 0 &&
+      reminder.notifyDaysBefore.includes(0)
+    ) {
       triggerType = 'due_today';
       title = `Due Today: ${reminder.title}`;
       body = `${reminder.provider}${amountSuffix} · Final day of ${reminder.startDate}–${reminder.endDate} window.`;

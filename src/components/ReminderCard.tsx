@@ -2,6 +2,7 @@ import React from 'react';
 import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { CATEGORY_LABELS, RECURRENCE_LABELS } from '../constants/reminder';
 import { COLORS, FONTS } from '../theme/tokens';
+import type { Reminder } from '../types/reminder';
 import { buildGoogleCalendarUrl, downloadIcsFile } from '../utils/calendarExport';
 import {
   formatCurrency,
@@ -11,7 +12,16 @@ import {
 } from '../utils/dateRange';
 import { BellIcon, CalendarIcon, GlyphIcon } from './RNIcons';
 
-export const ReminderCard = ({
+export interface ReminderCardProps {
+  reminder: Reminder;
+  onToggleComplete: (id: string) => void;
+  onAdvanceCycle: (id: string) => void;
+  onEdit: (reminder: Reminder) => void;
+  onDelete: (reminder: Reminder) => void;
+  onMarkCalendarSynced: (id: string) => void;
+}
+
+export const ReminderCard: React.FC<ReminderCardProps> = ({
   reminder,
   onToggleComplete,
   onAdvanceCycle,
@@ -47,7 +57,9 @@ export const ReminderCard = ({
             {CATEGORY_LABELS[reminder.category]} · {reminder.provider}
             {reminder.accountRef ? ` · ${reminder.accountRef}` : ''}
           </Text>
-          <Text style={[styles.title, reminder.completed && styles.titleCompleted]}>
+          <Text
+            style={[styles.title, reminder.completed && styles.titleCompleted]}
+          >
             {reminder.title}
           </Text>
         </View>
@@ -63,7 +75,8 @@ export const ReminderCard = ({
       <View style={styles.windowSection}>
         <View style={styles.dateRow}>
           <Text style={styles.dateRangeText}>
-            {formatShortDate(reminder.startDate)} — {formatFullDate(reminder.endDate)}
+            {formatShortDate(reminder.startDate)} —{' '}
+            {formatFullDate(reminder.endDate)}
           </Text>
           <Text style={styles.spanText}>{metrics.totalDays}d window</Text>
         </View>
@@ -71,7 +84,11 @@ export const ReminderCard = ({
         <View
           style={styles.track}
           accessibilityRole="progressbar"
-          accessibilityValue={{ min: 0, max: 100, now: metrics.progressPercent }}
+          accessibilityValue={{
+            min: 0,
+            max: 100,
+            now: metrics.progressPercent,
+          }}
         >
           <View
             style={[
@@ -114,7 +131,9 @@ export const ReminderCard = ({
             accessibilityRole="button"
             style={[
               styles.completeBtn,
-              reminder.completed ? styles.completeBtnDone : styles.completeBtnPending,
+              reminder.completed
+                ? styles.completeBtnDone
+                : styles.completeBtnPending,
             ]}
           >
             <GlyphIcon

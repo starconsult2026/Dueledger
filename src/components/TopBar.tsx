@@ -1,17 +1,34 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { COLORS, FONTS } from '../theme/tokens';
+import type { AppTab } from '../types/reminder';
 import { PWAInstallButton } from './PWAInstallButton';
 import { PlusIcon } from './RNIcons';
 
-const NAV_ITEMS = [
+const NAV_ITEMS: Array<{ id: AppTab; label: string }> = [
   { id: 'reminders', label: 'Reminders' },
   { id: 'timeline', label: 'Date Range' },
   { id: 'alerts', label: 'Alerts' },
   { id: 'settings', label: 'Settings' },
 ];
 
-export const TopBar = ({ activeTab, onTabChange, onCreateNew }) => {
+export interface TopBarProps {
+  activeTab: AppTab;
+  onTabChange: (tab: AppTab) => void;
+  onCreateNew: () => void;
+}
+
+export const TopBar: React.FC<TopBarProps> = ({
+  activeTab,
+  onTabChange,
+  onCreateNew,
+}) => {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
 

@@ -1,7 +1,15 @@
 import React, { useMemo, useState } from 'react';
-import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  Linking,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { CATEGORY_LABELS } from '../constants/reminder';
 import { COLORS, FONTS } from '../theme/tokens';
+import type { Reminder } from '../types/reminder';
 import { buildGoogleCalendarUrl, downloadIcsFile } from '../utils/calendarExport';
 import {
   addDaysToDateString,
@@ -16,16 +24,29 @@ import {
 import { DateField } from './DateField';
 import { CalendarIcon, GlyphIcon } from './RNIcons';
 
-export const DateRangeTimeline = ({
+export interface DateRangeTimelineProps {
+  reminders: Reminder[];
+  onEdit: (reminder: Reminder) => void;
+  onMarkCalendarSynced: (id: string) => void;
+}
+
+export const DateRangeTimeline: React.FC<DateRangeTimelineProps> = ({
   reminders,
   onEdit,
   onMarkCalendarSynced,
 }) => {
   const today = toLocalDateString(new Date());
-  const [rangeStart, setRangeStart] = useState(() => addDaysToDateString(today, -7));
-  const [rangeEnd, setRangeEnd] = useState(() => addDaysToDateString(today, 23));
+  const [rangeStart, setRangeStart] = useState(() =>
+    addDaysToDateString(today, -7)
+  );
+  const [rangeEnd, setRangeEnd] = useState(() =>
+    addDaysToDateString(today, 23)
+  );
 
-  const totalRangeDays = Math.max(1, diffCalendarDays(rangeStart, rangeEnd) + 1);
+  const totalRangeDays = Math.max(
+    1,
+    diffCalendarDays(rangeStart, rangeEnd) + 1
+  );
 
   const matchingReminders = useMemo(() => {
     return reminders
@@ -128,7 +149,8 @@ export const DateRangeTimeline = ({
           <Text style={styles.rangeMetaText}>{formatFullDate(rangeStart)}</Text>
           <Text style={styles.rangeMetaText}>
             {matchingReminders.length}{' '}
-            {matchingReminders.length === 1 ? 'window' : 'windows'} ({totalRangeDays}d)
+            {matchingReminders.length === 1 ? 'window' : 'windows'} (
+            {totalRangeDays}d)
           </Text>
           <Text style={styles.rangeMetaText}>{formatFullDate(rangeEnd)}</Text>
         </View>
@@ -155,16 +177,21 @@ export const DateRangeTimeline = ({
             {matchingReminders.map((reminder) => {
               const metrics = getReminderWindowMetrics(reminder);
               const clampedStart =
-                reminder.startDate < rangeStart ? rangeStart : reminder.startDate;
+                reminder.startDate < rangeStart
+                  ? rangeStart
+                  : reminder.startDate;
               const clampedEnd =
                 reminder.endDate > rangeEnd ? rangeEnd : reminder.endDate;
               const leftPct = Math.max(
                 0,
-                (diffCalendarDays(rangeStart, clampedStart) / totalRangeDays) * 100
+                (diffCalendarDays(rangeStart, clampedStart) / totalRangeDays) *
+                  100
               );
               const widthPct = Math.max(
                 4,
-                ((diffCalendarDays(clampedStart, clampedEnd) + 1) / totalRangeDays) * 100
+                ((diffCalendarDays(clampedStart, clampedEnd) + 1) /
+                  totalRangeDays) *
+                  100
               );
 
               const barColor =
@@ -181,10 +208,14 @@ export const DateRangeTimeline = ({
               return (
                 <View key={reminder.id} style={styles.itemCard}>
                   <View style={styles.itemHeader}>
-                    <Pressable onPress={() => onEdit(reminder)} style={{ flex: 1 }}>
+                    <Pressable
+                      onPress={() => onEdit(reminder)}
+                      style={{ flex: 1 }}
+                    >
                       <Text style={styles.itemTitle}>{reminder.title}</Text>
                       <Text style={styles.itemSub}>
-                        {CATEGORY_LABELS[reminder.category]} · {reminder.provider}
+                        {CATEGORY_LABELS[reminder.category]} ·{' '}
+                        {reminder.provider}
                       </Text>
                     </Pressable>
 
@@ -196,7 +227,9 @@ export const DateRangeTimeline = ({
                       </Text>
                       <Pressable
                         onPress={() => {
-                          Linking.openURL(buildGoogleCalendarUrl(reminder)).catch(() => {});
+                          Linking.openURL(
+                            buildGoogleCalendarUrl(reminder)
+                          ).catch(() => {});
                           onMarkCalendarSynced(reminder.id);
                         }}
                         style={styles.addCalBtn}

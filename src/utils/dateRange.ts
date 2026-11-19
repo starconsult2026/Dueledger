@@ -1,29 +1,36 @@
-export function toLocalDateString(date) {
+import type {
+  CurrencyCode,
+  RecurrenceRule,
+  Reminder,
+  ReminderWindowMetrics,
+} from '../types/reminder';
+
+export function toLocalDateString(date: Date): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
 }
 
-export function parseLocalDate(dateStr) {
+export function parseLocalDate(dateStr: string): Date {
   const [y, m, d] = dateStr.split('-').map(Number);
   return new Date(y, (m || 1) - 1, d || 1, 0, 0, 0, 0);
 }
 
-export function diffCalendarDays(fromStr, toStr) {
+export function diffCalendarDays(fromStr: string, toStr: string): number {
   const from = parseLocalDate(fromStr);
   const to = parseLocalDate(toStr);
   const msPerDay = 24 * 60 * 60 * 1000;
   return Math.round((to.getTime() - from.getTime()) / msPerDay);
 }
 
-export function addDaysToDateString(dateStr, days) {
+export function addDaysToDateString(dateStr: string, days: number): string {
   const date = parseLocalDate(dateStr);
   date.setDate(date.getDate() + days);
   return toLocalDateString(date);
 }
 
-export function formatShortDate(dateStr) {
+export function formatShortDate(dateStr: string): string {
   const date = parseLocalDate(dateStr);
   return date.toLocaleDateString('en-US', {
     month: 'short',
@@ -31,7 +38,7 @@ export function formatShortDate(dateStr) {
   });
 }
 
-export function formatFullDate(dateStr) {
+export function formatFullDate(dateStr: string): string {
   const date = parseLocalDate(dateStr);
   return date.toLocaleDateString('en-US', {
     month: 'short',
@@ -40,7 +47,10 @@ export function formatFullDate(dateStr) {
   });
 }
 
-export function formatCurrency(amount, currency = 'INR') {
+export function formatCurrency(
+  amount?: number | null,
+  currency: CurrencyCode | string = 'INR'
+): string | null {
   if (amount === undefined || amount === null || Number.isNaN(amount)) return null;
   const targetCurrency = currency || 'INR';
   try {
@@ -54,9 +64,15 @@ export function formatCurrency(amount, currency = 'INR') {
   }
 }
 
-export function getReminderWindowMetrics(reminder, referenceDate = new Date()) {
+export function getReminderWindowMetrics(
+  reminder: Reminder,
+  referenceDate: Date = new Date()
+): ReminderWindowMetrics {
   const todayStr = toLocalDateString(referenceDate);
-  const totalDays = Math.max(1, diffCalendarDays(reminder.startDate, reminder.endDate) + 1);
+  const totalDays = Math.max(
+    1,
+    diffCalendarDays(reminder.startDate, reminder.endDate) + 1
+  );
   const daysUntilStart = diffCalendarDays(todayStr, reminder.startDate);
   const daysRemaining = diffCalendarDays(todayStr, reminder.endDate);
   const elapsedDays = Math.max(
@@ -92,7 +108,8 @@ export function getReminderWindowMetrics(reminder, referenceDate = new Date()) {
   if (daysUntilStart > 0) {
     return {
       status: 'upcoming',
-      statusLabel: daysUntilStart === 1 ? 'Starts tomorrow' : `Starts in ${daysUntilStart}d`,
+      statusLabel:
+        daysUntilStart === 1 ? 'Starts tomorrow' : `Starts in ${daysUntilStart}d`,
       totalDays,
       elapsedDays: 0,
       daysRemaining,
@@ -101,7 +118,10 @@ export function getReminderWindowMetrics(reminder, referenceDate = new Date()) {
     };
   }
 
-  const progressPercent = Math.min(100, Math.max(4, Math.round((elapsedDays / totalDays) * 100)));
+  const progressPercent = Math.min(
+    100,
+    Math.max(4, Math.round((elapsedDays / totalDays) * 100))
+  );
 
   if (daysRemaining === 0) {
     return {
@@ -138,14 +158,21 @@ export function getReminderWindowMetrics(reminder, referenceDate = new Date()) {
   };
 }
 
-export function overlapsDateRange(reminder, rangeStart, rangeEnd) {
+export function overlapsDateRange(
+  reminder: Reminder,
+  rangeStart?: string,
+  rangeEnd?: string
+): boolean {
   if (!rangeStart && !rangeEnd) return true;
   if (rangeStart && reminder.endDate < rangeStart) return false;
   if (rangeEnd && reminder.startDate > rangeEnd) return false;
   return true;
 }
 
-export function advanceDateByRecurrence(dateStr, recurrence) {
+export function advanceDateByRecurrence(
+  dateStr: string,
+  recurrence: RecurrenceRule
+): string {
   const date = parseLocalDate(dateStr);
   if (recurrence === 'monthly') {
     date.setMonth(date.getMonth() + 1);

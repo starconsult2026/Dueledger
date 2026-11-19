@@ -4,7 +4,13 @@ import { usePWAInstall } from '../hooks/usePWAInstall';
 import { COLORS, FONTS } from '../theme/tokens';
 import { CloseIcon, GlyphIcon, SmartphoneIcon } from './RNIcons';
 
-export const PWAInstallButton = ({ variant = 'compact' }) => {
+export interface PWAInstallButtonProps {
+  variant?: 'compact' | 'card';
+}
+
+export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
+  variant = 'compact',
+}) => {
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
   const [showGuide, setShowGuide] = useState(false);
 
@@ -27,7 +33,13 @@ export const PWAInstallButton = ({ variant = 'compact' }) => {
 
   if (isInstallable) {
     return (
-      <Pressable onPress={install} accessibilityRole="button" style={styles.installBtn}>
+      <Pressable
+        onPress={() => {
+          void install();
+        }}
+        accessibilityRole="button"
+        style={styles.installBtn}
+      >
         <GlyphIcon symbol="↓" size={14} color={COLORS.white} />
         <Text style={styles.installBtnText}>Install Android App</Text>
       </Pressable>
@@ -39,7 +51,9 @@ export const PWAInstallButton = ({ variant = 'compact' }) => {
       <Pressable
         onPress={() => setShowGuide(true)}
         accessibilityRole="button"
-        style={variant === 'card' ? styles.cardTriggerBtn : styles.compactTriggerBtn}
+        style={
+          variant === 'card' ? styles.cardTriggerBtn : styles.compactTriggerBtn
+        }
       >
         <SmartphoneIcon size={15} color={COLORS.teal} />
         <Text style={styles.triggerText}>
@@ -58,7 +72,9 @@ export const PWAInstallButton = ({ variant = 'compact' }) => {
             <View style={styles.modalHeader}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.modalTitle}>
-                  {isIOS ? 'Install on iPhone or iPad' : 'Install DueLedger on Android'}
+                  {isIOS
+                    ? 'Install on iPhone or iPad'
+                    : 'Install DueLedger on Android'}
                 </Text>
                 <Text style={styles.modalSub}>
                   Run DueLedger full-screen from your home screen with offline access and notifications.

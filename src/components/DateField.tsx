@@ -2,14 +2,27 @@ import React from 'react';
 import { Platform, StyleSheet, TextInput } from 'react-native';
 import { COLORS, FONTS } from '../theme/tokens';
 
-export const DateField = ({ value, min, onChange, accessibilityLabel }) => {
+export interface DateFieldProps {
+  value: string;
+  min?: string;
+  onChange: (value: string) => void;
+  accessibilityLabel?: string;
+}
+
+export const DateField: React.FC<DateFieldProps> = ({
+  value,
+  min,
+  onChange,
+  accessibilityLabel,
+}) => {
   if (Platform.OS === 'web') {
     return React.createElement('input', {
       type: 'date',
       value: value || '',
       min: min || undefined,
       'aria-label': accessibilityLabel,
-      onChange: (e) => onChange(e.target.value),
+      onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+        onChange(e.target.value),
       style: {
         minHeight: 44,
         width: '100%',

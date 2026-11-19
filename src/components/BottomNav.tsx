@@ -1,13 +1,36 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { COLORS, FONTS } from '../theme/tokens';
-import { BellIcon, CalendarIcon, ListIcon, SettingsIcon } from './RNIcons';
+import type { AppTab } from '../types/reminder';
+import {
+  BellIcon,
+  CalendarIcon,
+  type IconProps,
+  ListIcon,
+  SettingsIcon,
+} from './RNIcons';
 
-export const BottomNav = ({ activeTab, onTabChange, urgentCount }) => {
+export interface BottomNavProps {
+  activeTab: AppTab;
+  onTabChange: (tab: AppTab) => void;
+  urgentCount: number;
+}
+
+export const BottomNav: React.FC<BottomNavProps> = ({
+  activeTab,
+  onTabChange,
+  urgentCount,
+}) => {
   const { width } = useWindowDimensions();
   if (width >= 768) return null;
 
-  const tabs = [
+  const tabs: Array<{ id: AppTab; label: string; Icon: React.FC<IconProps> }> = [
     { id: 'reminders', label: 'Reminders', Icon: ListIcon },
     { id: 'timeline', label: 'Date Range', Icon: CalendarIcon },
     { id: 'alerts', label: 'Alerts', Icon: BellIcon },
@@ -37,7 +60,9 @@ export const BottomNav = ({ activeTab, onTabChange, urgentCount }) => {
                 </View>
               )}
             </View>
-            <Text style={[styles.label, active && styles.labelActive]}>{tab.label}</Text>
+            <Text style={[styles.label, active && styles.labelActive]}>
+              {tab.label}
+            </Text>
           </Pressable>
         );
       })}

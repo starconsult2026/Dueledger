@@ -1,9 +1,14 @@
 import React from 'react';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { COLORS, FONTS } from '../theme/tokens';
+import type { Reminder } from '../types/reminder';
 import { getReminderWindowMetrics } from '../utils/dateRange';
 
-export const SummaryStrip = ({ reminders }) => {
+export interface SummaryStripProps {
+  reminders: Reminder[];
+}
+
+export const SummaryStrip: React.FC<SummaryStripProps> = ({ reminders }) => {
   const { width } = useWindowDimensions();
   const isWide = width >= 640;
 
@@ -14,7 +19,12 @@ export const SummaryStrip = ({ reminders }) => {
   const completedCount = metricsList.filter((m) => m.status === 'completed').length;
 
   const items = [
-    { label: 'Active Windows', value: activeCount, sub: 'Open now', color: COLORS.teal },
+    {
+      label: 'Active Windows',
+      value: activeCount,
+      sub: 'Open now',
+      color: COLORS.teal,
+    },
     {
       label: 'Due Within 3d',
       value: dueSoonCount,
@@ -27,7 +37,12 @@ export const SummaryStrip = ({ reminders }) => {
       sub: 'Past end date',
       color: overdueCount > 0 ? COLORS.rose : COLORS.inkPrimary,
     },
-    { label: 'Completed', value: completedCount, sub: 'Settled items', color: COLORS.emerald },
+    {
+      label: 'Completed',
+      value: completedCount,
+      sub: 'Settled items',
+      color: COLORS.emerald,
+    },
   ];
 
   return (

@@ -11,12 +11,24 @@ import {
 import { COLORS, FONTS } from '../theme/tokens';
 import { CloseIcon, GlyphIcon } from './RNIcons';
 
-export const SelectDropdown = ({
+export interface DropdownOption<T extends string = string> {
+  value: T;
+  label: string;
+}
+
+export interface SelectDropdownProps<T extends string = string> {
+  value: T;
+  options: DropdownOption<T>[];
+  onChange: (value: T) => void;
+  accessibilityLabel?: string;
+}
+
+export function SelectDropdown<T extends string = string>({
   value,
   options,
   onChange,
   accessibilityLabel,
-}) => {
+}: SelectDropdownProps<T>): React.ReactElement {
   const [open, setOpen] = useState(false);
 
   if (Platform.OS === 'web') {
@@ -25,7 +37,8 @@ export const SelectDropdown = ({
       {
         value,
         'aria-label': accessibilityLabel,
-        onChange: (e) => onChange(e.target.value),
+        onChange: (e: React.ChangeEvent<HTMLSelectElement>) =>
+          onChange(e.target.value as T),
         style: {
           minHeight: 44,
           width: '100%',
@@ -122,7 +135,7 @@ export const SelectDropdown = ({
       </Modal>
     </>
   );
-};
+}
 
 const styles = StyleSheet.create({
   trigger: {

@@ -1,6 +1,6 @@
 import { AppRegistry } from 'react-native';
 import { registerSW } from 'virtual:pwa-register';
-import App from './App.jsx';
+import App from './App';
 import './index.css';
 
 registerSW({ immediate: true });

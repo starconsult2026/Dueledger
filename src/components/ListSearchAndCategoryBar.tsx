@@ -9,9 +9,23 @@ import {
 } from 'react-native';
 import { CATEGORY_LABELS } from '../constants/reminder';
 import { COLORS, FONTS } from '../theme/tokens';
+import type { ServiceCategory } from '../types/reminder';
 import { CloseIcon, SearchIcon } from './RNIcons';
 
-export const ListSearchAndCategoryBar = ({
+export type CategoryFilter = 'all' | ServiceCategory;
+
+export interface ListSearchAndCategoryBarProps {
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+  category: CategoryFilter;
+  onCategoryChange: (category: CategoryFilter) => void;
+  categoryCounts?: Partial<Record<ServiceCategory, number>>;
+  totalCount?: number;
+}
+
+export const ListSearchAndCategoryBar: React.FC<
+  ListSearchAndCategoryBarProps
+> = ({
   searchQuery,
   onSearchChange,
   category,
@@ -19,6 +33,10 @@ export const ListSearchAndCategoryBar = ({
   categoryCounts = {},
   totalCount = 0,
 }) => {
+  const categoryEntries = Object.entries(CATEGORY_LABELS) as Array<
+    [ServiceCategory, string]
+  >;
+
   return (
     <View style={styles.container}>
       <View style={styles.searchWrap}>
@@ -80,7 +98,7 @@ export const ListSearchAndCategoryBar = ({
           </View>
         </Pressable>
 
-        {Object.entries(CATEGORY_LABELS).map(([key, label]) => {
+        {categoryEntries.map(([key, label]) => {
           const active = category === key;
           const count = categoryCounts[key] || 0;
           return (
@@ -91,9 +109,7 @@ export const ListSearchAndCategoryBar = ({
               accessibilityState={{ selected: active }}
               style={[styles.chip, active && styles.chipActive]}
             >
-              <Text
-                style={[styles.chipText, active && styles.chipTextActive]}
-              >
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>
                 {label}
               </Text>
               <View

@@ -1,11 +1,12 @@
 import { CATEGORY_LABELS } from '../constants/reminder';
+import type { Reminder } from '../types/reminder';
 import { addDaysToDateString, formatCurrency } from './dateRange';
 
-function toCompactDate(dateStr) {
+function toCompactDate(dateStr: string): string {
   return dateStr.replace(/-/g, '');
 }
 
-function escapeIcsText(text) {
+function escapeIcsText(text: string): string {
   return text
     .replace(/\\/g, '\\\\')
     .replace(/\n/g, '\\n')
@@ -13,8 +14,8 @@ function escapeIcsText(text) {
     .replace(/;/g, '\\;');
 }
 
-function formatUtcTimestamp(date) {
-  const pad = (n) => String(n).padStart(2, '0');
+function formatUtcTimestamp(date: Date): string {
+  const pad = (n: number): string => String(n).padStart(2, '0');
   return (
     date.getUTCFullYear() +
     pad(date.getUTCMonth() + 1) +
@@ -27,7 +28,7 @@ function formatUtcTimestamp(date) {
   );
 }
 
-export function buildGoogleCalendarUrl(reminder) {
+export function buildGoogleCalendarUrl(reminder: Reminder): string {
   const startCompact = toCompactDate(reminder.startDate);
   const endCompact = toCompactDate(addDaysToDateString(reminder.endDate, 1));
   const formattedAmount = formatCurrency(reminder.amount, reminder.currency);
@@ -39,7 +40,7 @@ export function buildGoogleCalendarUrl(reminder) {
     formattedAmount ? `Amount: ${formattedAmount}` : null,
     `Action Window: ${reminder.startDate} to ${reminder.endDate}`,
     reminder.notes ? `Notes: ${reminder.notes}` : null,
-  ].filter(Boolean);
+  ].filter((line): line is string => Boolean(line));
 
   const params = new URLSearchParams({
     action: 'TEMPLATE',
@@ -59,7 +60,7 @@ export function buildGoogleCalendarUrl(reminder) {
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
-export function generateIcsContent(reminders) {
+export function generateIcsContent(reminders: Reminder[]): string {
   const nowStamp = formatUtcTimestamp(new Date());
   const events = reminders.map((reminder) => {
     const dtStart = toCompactDate(reminder.startDate);
@@ -74,10 +75,12 @@ export function generateIcsContent(reminders) {
       `Date Window: ${reminder.startDate} to ${reminder.endDate}`,
       reminder.notes ? `Notes: ${reminder.notes}` : null,
     ]
-      .filter(Boolean)
+      .filter((line): line is string => Boolean(line))
       .join('\n');
 
-    const alarms = (reminder.notifyDaysBefore.length > 0 ? reminder.notifyDaysBefore : [1])
+    const alarms = (
+      reminder.notifyDaysBefore.length > 0 ? reminder.notifyDaysBefore : [1]
+    )
       .map((daysBefore) => {
         const trigger = daysBefore === 0 ? '-PT0M' : `-P${daysBefore}D`;
         return [
@@ -128,7 +131,7 @@ export function generateIcsContent(reminders) {
   ].join('\r\n');
 }
 
-export function downloadIcsFile(reminders, filename) {
+export function downloadIcsFile(reminders: Reminder[], filename: string): void {
   if (typeof document === 'undefined' || typeof URL === 'undefined') return;
   const content = generateIcsContent(reminders);
   const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });

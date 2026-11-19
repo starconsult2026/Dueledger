@@ -1,23 +1,40 @@
 import { useEffect, useState } from 'react';
 
-export function usePWAInstall() {
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+}
+
+interface NavigatorWithStandalone extends Navigator {
+  standalone?: boolean;
+}
+
+export interface PWAInstallState {
+  isInstallable: boolean;
+  isInstalled: boolean;
+  isIOS: boolean;
+  install: () => Promise<boolean>;
+}
+
+export function usePWAInstall(): PWAInstallState {
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
     const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
-      window.navigator.standalone === true;
+      (window.navigator as NavigatorWithStandalone).standalone === true;
     setIsInstalled(isStandalone);
 
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
     setIsIOS(isIOSDevice);
 
-    const handleBeforeInstallPrompt = (e) => {
+    const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e);
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
     };
 
     const handleAppInstalled = () => {
@@ -29,12 +46,15 @@ export function usePWAInstall() {
     window.addEventListener('appinstalled', handleAppInstalled);
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener(
+        'beforeinstallprompt',
+        handleBeforeInstallPrompt
+      );
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
 
-  const install = async () => {
+  const install = async (): Promise<boolean> => {
     if (!deferredPrompt) return false;
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;

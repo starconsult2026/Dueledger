@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { COLORS, FONTS } from '../theme/tokens';
 
-export function useOnlineStatus() {
-  const [isOnline, setIsOnline] = useState(
-    Platform.OS === 'web' && typeof navigator !== 'undefined' ? navigator.onLine : true
+export function useOnlineStatus(): boolean {
+  const [isOnline, setIsOnline] = useState<boolean>(
+    Platform.OS === 'web' && typeof navigator !== 'undefined'
+      ? navigator.onLine
+      : true
   );
 
   useEffect(() => {
@@ -24,7 +26,7 @@ export function useOnlineStatus() {
   return isOnline;
 }
 
-export const OfflineIndicator = () => {
+export const OfflineIndicator: React.FC = () => {
   const isOnline = useOnlineStatus();
 
   if (isOnline) return null;

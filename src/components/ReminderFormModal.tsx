@@ -10,6 +10,13 @@ import {
 } from 'react-native';
 import { CATEGORY_LABELS, RECURRENCE_LABELS } from '../constants/reminder';
 import { COLORS, FONTS } from '../theme/tokens';
+import type {
+  CurrencyCode,
+  RecurrenceRule,
+  Reminder,
+  ReminderInput,
+  ServiceCategory,
+} from '../types/reminder';
 import {
   addDaysToDateString,
   diffCalendarDays,
@@ -17,13 +24,22 @@ import {
 } from '../utils/dateRange';
 import { DateField } from './DateField';
 import { CloseIcon } from './RNIcons';
-import { SelectDropdown } from './SelectDropdown';
+import { type DropdownOption, SelectDropdown } from './SelectDropdown';
 
-const CATEGORY_OPTIONS = Object.entries(CATEGORY_LABELS).map(
-  ([value, label]) => ({ value, label })
-);
+interface QuickTemplate {
+  label: string;
+  title: string;
+  provider: string;
+  category: ServiceCategory;
+  spanDays: number;
+  recurrence: RecurrenceRule;
+}
 
-const TEMPLATES = [
+const CATEGORY_OPTIONS: DropdownOption<ServiceCategory>[] = (
+  Object.entries(CATEGORY_LABELS) as Array<[ServiceCategory, string]>
+).map(([value, label]) => ({ value, label }));
+
+const TEMPLATES: QuickTemplate[] = [
   {
     label: 'Credit Card Window',
     title: 'Credit Card Statement Payment',
@@ -73,7 +89,16 @@ const LEAD_DAY_OPTIONS = [
   { value: 0, label: 'On end date' },
 ];
 
-export const ReminderFormModal = ({
+export interface ReminderFormModalProps {
+  open: boolean;
+  initialReminder: Reminder | null;
+  defaultCurrency: CurrencyCode;
+  defaultLeadDays: number[];
+  onClose: () => void;
+  onSave: (data: ReminderInput) => void;
+}
+
+export const ReminderFormModal: React.FC<ReminderFormModalProps> = ({
   open,
   initialReminder,
   defaultCurrency,
@@ -86,13 +111,14 @@ export const ReminderFormModal = ({
   const [title, setTitle] = useState('');
   const [provider, setProvider] = useState('');
   const [accountRef, setAccountRef] = useState('');
-  const [category, setCategory] = useState('banking');
+  const [category, setCategory] = useState<ServiceCategory>('banking');
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(addDaysToDateString(today, 10));
   const [amount, setAmount] = useState('');
-  const [recurrence, setRecurrence] = useState('monthly');
+  const [recurrence, setRecurrence] = useState<RecurrenceRule>('monthly');
   const [notifyOnStart, setNotifyOnStart] = useState(true);
-  const [notifyDaysBefore, setNotifyDaysBefore] = useState(defaultLeadDays);
+  const [notifyDaysBefore, setNotifyDaysBefore] =
+    useState<number[]>(defaultLeadDays);
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
 
@@ -107,7 +133,9 @@ export const ReminderFormModal = ({
       setStartDate(initialReminder.startDate);
       setEndDate(initialReminder.endDate);
       setAmount(
-        initialReminder.amount !== undefined ? String(initialReminder.amount) : ''
+        initialReminder.amount !== undefined
+          ? String(initialReminder.amount)
+          : ''
       );
       setRecurrence(initialReminder.recurrence);
       setNotifyOnStart(initialReminder.notifyOnStart);
@@ -131,7 +159,7 @@ export const ReminderFormModal = ({
   const spanDays =
     startDate && endDate ? diffCalendarDays(startDate, endDate) + 1 : 0;
 
-  const applyTemplate = (tpl) => {
+  const applyTemplate = (tpl: QuickTemplate) => {
     setTitle(tpl.title);
     setProvider(tpl.provider);
     setCategory(tpl.category);
@@ -140,7 +168,7 @@ export const ReminderFormModal = ({
     setEndDate(addDaysToDateString(today, tpl.spanDays));
   };
 
-  const toggleLeadDay = (day) => {
+  const toggleLeadDay = (day: number) => {
     setNotifyDaysBefore((prev) =>
       prev.includes(day)
         ? prev.filter((d) => d !== day)
@@ -190,13 +218,19 @@ export const ReminderFormModal = ({
     });
   };
 
+  const recurrenceEntries = Object.entries(RECURRENCE_LABELS) as Array<
+    [RecurrenceRule, string]
+  >;
+
   return (
     <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <View style={styles.sheet}>
           <View style={styles.header}>
             <Text style={styles.headerTitle}>
-              {initialReminder ? 'Edit Service Window' : 'New Bank or Service Reminder'}
+              {initialReminder
+                ? 'Edit Service Window'
+                : 'New Bank or Service Reminder'}
             </Text>
             <Pressable
               onPress={onClose}
@@ -208,7 +242,10 @@ export const ReminderFormModal = ({
             </Pressable>
           </View>
 
-          <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
+          <ScrollView
+            style={styles.body}
+            contentContainerStyle={styles.bodyContent}
+          >
             {!initialReminder && (
               <View style={styles.fieldGroup}>
                 <Text style={styles.sectionMiniLabel}>Quick Templates</Text>
@@ -324,7 +361,7 @@ export const ReminderFormModal = ({
             <View style={styles.fieldGroup}>
               <Text style={styles.label}>Recurrence Schedule</Text>
               <View style={styles.wrapRow}>
-                {Object.entries(RECURRENCE_LABELS).map(([key, label]) => {
+                {recurrenceEntries.map(([key, label]) => {
                   const active = recurrence === key;
                   return (
                     <Pressable
@@ -351,7 +388,10 @@ export const ReminderFormModal = ({
               <View style={styles.wrapRow}>
                 <Pressable
                   onPress={() => setNotifyOnStart((prev) => !prev)}
-                  style={[styles.choiceBtn, notifyOnStart && styles.choiceBtnActive]}
+                  style={[
+                    styles.choiceBtn,
+                    notifyOnStart && styles.choiceBtnActive,
+                  ]}
                 >
                   <Text
                     style={[

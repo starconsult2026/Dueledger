@@ -1,10 +1,27 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { COLORS, FONTS } from '../theme/tokens';
+import type {
+  NotificationLog,
+  NotificationPermissionState,
+  Reminder,
+} from '../types/reminder';
 import { formatFullDate, getReminderWindowMetrics } from '../utils/dateRange';
 import { BellIcon, GlyphIcon } from './RNIcons';
 
-export const NotificationCenter = ({
+export interface NotificationCenterProps {
+  permission: NotificationPermissionState;
+  pushEnabled: boolean;
+  reminders: Reminder[];
+  logs: NotificationLog[];
+  onRequestPermission: () => void;
+  onTogglePushEnabled: () => void;
+  onSendTestNotification: () => void;
+  onRunWindowCheck: () => void;
+  onClearLogs: () => void;
+}
+
+export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   permission,
   pushEnabled,
   reminders,
@@ -26,7 +43,9 @@ export const NotificationCenter = ({
       <View style={styles.card}>
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>Android & Browser Push Notifications</Text>
+            <Text style={styles.title}>
+              Android & Browser Push Notifications
+            </Text>
             <Text style={styles.subtitle}>
               Receive device alerts when a bank or service window opens, approaches its closing date, or becomes due.
             </Text>
@@ -36,7 +55,9 @@ export const NotificationCenter = ({
             {permission !== 'granted' && permission !== 'unsupported' && (
               <Pressable onPress={onRequestPermission} style={styles.primaryBtn}>
                 <BellIcon size={15} color={COLORS.white} />
-                <Text style={styles.primaryBtnText}>Allow Push Notifications</Text>
+                <Text style={styles.primaryBtnText}>
+                  Allow Push Notifications
+                </Text>
               </Pressable>
             )}
 
@@ -49,7 +70,9 @@ export const NotificationCenter = ({
               ]}
             >
               <BellIcon size={15} color={COLORS.teal} />
-              <Text style={styles.secondaryBtnText}>Send Test Notification</Text>
+              <Text style={styles.secondaryBtnText}>
+                Send Test Notification
+              </Text>
             </Pressable>
 
             <Pressable onPress={onRunWindowCheck} style={styles.secondaryBtn}>
@@ -107,7 +130,8 @@ export const NotificationCenter = ({
                     <View style={{ flex: 1 }}>
                       <Text style={styles.rowTitle}>{reminder.title}</Text>
                       <Text style={styles.rowSub}>
-                        {reminder.provider} · Ends {formatFullDate(reminder.endDate)}
+                        {reminder.provider} · Ends{' '}
+                        {formatFullDate(reminder.endDate)}
                       </Text>
                     </View>
                     <Text style={[styles.rowStatus, { color: statusColor }]}>
