@@ -1,26 +1,15 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
-import { ActiveTab } from '../types/reminder';
 import { PWAInstallButton } from './PWAInstallButton';
 
-interface TopBarProps {
-  activeTab: ActiveTab;
-  onTabChange: (tab: ActiveTab) => void;
-  onCreateNew: () => void;
-}
-
-const NAV_ITEMS: { id: ActiveTab; label: string }[] = [
+const NAV_ITEMS = [
   { id: 'reminders', label: 'Reminders' },
   { id: 'timeline', label: 'Date Range' },
   { id: 'alerts', label: 'Alerts' },
   { id: 'settings', label: 'Settings' },
 ];
 
-export const TopBar: React.FC<TopBarProps> = ({
-  activeTab,
-  onTabChange,
-  onCreateNew,
-}) => {
+export const TopBar = ({ activeTab, onTabChange, onCreateNew }) => {
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur-md pt-safe">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-8 px-4 sm:px-6 lg:h-16 lg:px-8">

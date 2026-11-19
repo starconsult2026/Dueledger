@@ -1,23 +1,8 @@
 import React from 'react';
 import { BellRing, CalendarRange, LayoutList, Settings } from 'lucide-react';
-import { ActiveTab } from '../types/reminder';
 
-interface BottomNavProps {
-  activeTab: ActiveTab;
-  onTabChange: (tab: ActiveTab) => void;
-  urgentCount: number;
-}
-
-export const BottomNav: React.FC<BottomNavProps> = ({
-  activeTab,
-  onTabChange,
-  urgentCount,
-}) => {
-  const tabs: {
-    id: ActiveTab;
-    label: string;
-    icon: React.ComponentType<{ className?: string }>;
-  }[] = [
+export const BottomNav = ({ activeTab, onTabChange, urgentCount }) => {
+  const tabs = [
     { id: 'reminders', label: 'Reminders', icon: LayoutList },
     { id: 'timeline', label: 'Date Range', icon: CalendarRange },
     { id: 'alerts', label: 'Alerts', icon: BellRing },

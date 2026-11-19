@@ -22,7 +22,7 @@ export function useOnlineStatus() {
   return isOnline;
 }
 
-export const OfflineIndicator: React.FC = () => {
+export const OfflineIndicator = () => {
   const isOnline = useOnlineStatus();
 
   if (isOnline) return null;

@@ -1,18 +1,7 @@
 import React from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 
-interface ConfirmModalProps {
-  open: boolean;
-  title: string;
-  description: string;
-  confirmLabel: string;
-  cancelLabel?: string;
-  destructive?: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}
-
-export const ConfirmModal: React.FC<ConfirmModalProps> = ({
+export const ConfirmModal = ({
   open,
   title,
   description,

@@ -1,16 +1,7 @@
 import React from 'react';
-import { Calendar, Download, RotateCcw, Trash2 } from 'lucide-react';
-import { AppSettings, Reminder } from '../types/reminder';
+import { Calendar, Download, ExternalLink, FileCode2, RotateCcw, Trash2 } from 'lucide-react';
 import { downloadIcsFile } from '../utils/calendarExport';
 import { PWAInstallButton } from './PWAInstallButton';
-
-interface SettingsViewProps {
-  settings: AppSettings;
-  reminders: Reminder[];
-  onUpdateSettings: (next: AppSettings) => void;
-  onResetDemoData: () => void;
-  onClearAllReminders: () => void;
-}
 
 const LEAD_OPTIONS = [
   { day: 7, label: '7 days before' },
@@ -19,14 +10,58 @@ const LEAD_OPTIONS = [
   { day: 0, label: 'Due day' },
 ];
 
-export const SettingsView: React.FC<SettingsViewProps> = ({
+export const SettingsView = ({
   settings,
   reminders,
   onUpdateSettings,
   onResetDemoData,
   onClearAllReminders,
 }) => {
-  const toggleDefaultLead = (day: number) => {
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const host = typeof window !== 'undefined' ? window.location.host : 'dueledger.app';
+  const pwabuilderUrl = `https://www.pwabuilder.com/reportcard?site=${encodeURIComponent(origin)}`;
+
+  const handleDownloadTwaManifest = () => {
+    const twaManifest = {
+      packageId: 'app.dueledger.reminders',
+      host,
+      name: 'DueLedger',
+      launcherName: 'DueLedger',
+      display: 'standalone',
+      themeColor: '#0F766E',
+      themeColorDark: '#0F766E',
+      navigationColor: '#F8FAFC',
+      navigationColorDark: '#0F172A',
+      navigationDividerColor: '#E2E8F0',
+      backgroundColor: '#F8FAFC',
+      enableNotifications: true,
+      startUrl: '/',
+      iconUrl: `${origin}/pwa-512x512.png`,
+      maskableIconUrl: `${origin}/pwa-maskable-512x512.png`,
+      splashScreenFadeOutDuration: 300,
+      appVersionName: '1.0.0',
+      appVersionCode: 1,
+      shortcuts: [],
+      fallbackType: 'customtabs',
+      enableSiteSettingsShortcut: 'true',
+      isChromeOSOnly: false,
+      webManifestUrl: `${origin}/manifest.webmanifest`,
+    };
+
+    const blob = new Blob([JSON.stringify(twaManifest, null, 2)], {
+      type: 'application/json;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'twa-manifest.json';
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const toggleDefaultLead = (day) => {
     const exists = settings.defaultLeadDays.includes(day);
     const next = exists
       ? settings.defaultLeadDays.filter((d) => d !== day)
@@ -39,13 +74,35 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       <section className="rounded-2xl border border-slate-200/90 bg-white p-5 space-y-4">
         <div>
           <h2 className="text-lg font-semibold text-slate-900 font-display">
-            Android App Installation
+            Android App & APK Packaging
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Install DueLedger as an offline-capable standalone app on your Android home screen.
+            Install directly on Android Chrome as a standalone WebAPK, or generate a downloadable signed .apk package via PWABuilder or Bubblewrap.
           </p>
         </div>
-        <PWAInstallButton variant="card" />
+
+        <div className="flex flex-wrap items-center gap-2">
+          <PWAInstallButton variant="card" />
+
+          <a
+            href={pwabuilderUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50 whitespace-nowrap"
+          >
+            <span>Package APK via PWABuilder</span>
+            <ExternalLink className="h-4 w-4 text-slate-500" />
+          </a>
+
+          <button
+            type="button"
+            onClick={handleDownloadTwaManifest}
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 whitespace-nowrap"
+          >
+            <FileCode2 className="h-4 w-4 text-teal-700" />
+            <span>Download twa-manifest.json</span>
+          </button>
+        </div>
       </section>
 
       <section className="rounded-2xl border border-slate-200/90 bg-white p-5 space-y-4">

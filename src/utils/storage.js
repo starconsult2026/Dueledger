@@ -1,4 +1,3 @@
-import { AppSettings, NotificationLogItem, Reminder } from '../types/reminder';
 import { addDaysToDateString, toLocalDateString } from './dateRange';
 
 const REMINDERS_KEY = 'dueledger_reminders_v1';
@@ -10,14 +9,14 @@ const DB_NAME = 'DueLedgerOfflineDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'kv';
 
-export const DEFAULT_SETTINGS: AppSettings = {
+export const DEFAULT_SETTINGS = {
   pushEnabled: true,
   defaultLeadDays: [3, 1, 0],
   defaultCurrency: 'USD',
   autoCheckOnLaunch: true,
 };
 
-export function createStarterReminders(): Reminder[] {
+export function createStarterReminders() {
   const today = toLocalDateString(new Date());
   const nowIso = new Date().toISOString();
 
@@ -115,7 +114,7 @@ export function createStarterReminders(): Reminder[] {
   ];
 }
 
-function openIDB(): Promise<IDBDatabase | null> {
+function openIDB() {
   if (typeof indexedDB === 'undefined') return Promise.resolve(null);
   return new Promise((resolve) => {
     try {
@@ -134,7 +133,7 @@ function openIDB(): Promise<IDBDatabase | null> {
   });
 }
 
-async function idbGet<T>(key: string): Promise<T | null> {
+async function idbGet(key) {
   const db = await openIDB();
   if (!db) return null;
   return new Promise((resolve) => {
@@ -142,7 +141,7 @@ async function idbGet<T>(key: string): Promise<T | null> {
       const tx = db.transaction(STORE_NAME, 'readonly');
       const store = tx.objectStore(STORE_NAME);
       const req = store.get(key);
-      req.onsuccess = () => resolve((req.result as T) ?? null);
+      req.onsuccess = () => resolve(req.result ?? null);
       req.onerror = () => resolve(null);
     } catch {
       resolve(null);
@@ -150,7 +149,7 @@ async function idbGet<T>(key: string): Promise<T | null> {
   });
 }
 
-async function idbSet<T>(key: string, value: T): Promise<void> {
+async function idbSet(key, value) {
   const db = await openIDB();
   if (!db) return;
   return new Promise((resolve) => {
@@ -166,17 +165,17 @@ async function idbSet<T>(key: string, value: T): Promise<void> {
   });
 }
 
-function lsGet<T>(key: string): T | null {
+function lsGet(key) {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return null;
-    return JSON.parse(raw) as T;
+    return JSON.parse(raw);
   } catch {
     return null;
   }
 }
 
-function lsSet<T>(key: string, value: T): void {
+function lsSet(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
@@ -184,16 +183,12 @@ function lsSet<T>(key: string, value: T): void {
   }
 }
 
-export async function loadAppState(): Promise<{
-  reminders: Reminder[];
-  logs: NotificationLogItem[];
-  settings: AppSettings;
-}> {
+export async function loadAppState() {
   const initialized =
-    (await idbGet<boolean>(INITIALIZED_KEY)) ?? lsGet<boolean>(INITIALIZED_KEY);
+    (await idbGet(INITIALIZED_KEY)) ?? lsGet(INITIALIZED_KEY);
 
   let reminders =
-    (await idbGet<Reminder[]>(REMINDERS_KEY)) ?? lsGet<Reminder[]>(REMINDERS_KEY);
+    (await idbGet(REMINDERS_KEY)) ?? lsGet(REMINDERS_KEY);
 
   if (!initialized && !reminders) {
     reminders = createStarterReminders();
@@ -203,13 +198,13 @@ export async function loadAppState(): Promise<{
   }
 
   const logs =
-    (await idbGet<NotificationLogItem[]>(LOGS_KEY)) ??
-    lsGet<NotificationLogItem[]>(LOGS_KEY) ??
+    (await idbGet(LOGS_KEY)) ??
+    lsGet(LOGS_KEY) ??
     [];
 
   const settings =
-    (await idbGet<AppSettings>(SETTINGS_KEY)) ??
-    lsGet<AppSettings>(SETTINGS_KEY) ??
+    (await idbGet(SETTINGS_KEY)) ??
+    lsGet(SETTINGS_KEY) ??
     DEFAULT_SETTINGS;
 
   return {
@@ -219,18 +214,18 @@ export async function loadAppState(): Promise<{
   };
 }
 
-export async function saveReminders(reminders: Reminder[]): Promise<void> {
+export async function saveReminders(reminders) {
   lsSet(REMINDERS_KEY, reminders);
   await idbSet(REMINDERS_KEY, reminders);
 }
 
-export async function saveNotificationLogs(logs: NotificationLogItem[]): Promise<void> {
+export async function saveNotificationLogs(logs) {
   const trimmed = logs.slice(0, 100);
   lsSet(LOGS_KEY, trimmed);
   await idbSet(LOGS_KEY, trimmed);
 }
 
-export async function saveSettings(settings: AppSettings): Promise<void> {
+export async function saveSettings(settings) {
   lsSet(SETTINGS_KEY, settings);
   await idbSet(SETTINGS_KEY, settings);
 }

@@ -1,11 +1,11 @@
-import { CATEGORY_LABELS, Reminder } from '../types/reminder';
+import { CATEGORY_LABELS } from '../constants/reminder';
 import { addDaysToDateString, formatCurrency } from './dateRange';
 
-function toCompactDate(dateStr: string): string {
+function toCompactDate(dateStr) {
   return dateStr.replace(/-/g, '');
 }
 
-function escapeIcsText(text: string): string {
+function escapeIcsText(text) {
   return text
     .replace(/\\/g, '\\\\')
     .replace(/\n/g, '\\n')
@@ -13,8 +13,8 @@ function escapeIcsText(text: string): string {
     .replace(/;/g, '\\;');
 }
 
-function formatUtcTimestamp(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0');
+function formatUtcTimestamp(date) {
+  const pad = (n) => String(n).padStart(2, '0');
   return (
     date.getUTCFullYear() +
     pad(date.getUTCMonth() + 1) +
@@ -27,11 +27,7 @@ function formatUtcTimestamp(date: Date): string {
   );
 }
 
-/**
- * Builds a direct Google Calendar event template link spanning the reminder's date range.
- * Google Calendar all-day end dates are exclusive, so we add 1 day to endDate.
- */
-export function buildGoogleCalendarUrl(reminder: Reminder): string {
+export function buildGoogleCalendarUrl(reminder) {
   const startCompact = toCompactDate(reminder.startDate);
   const endCompact = toCompactDate(addDaysToDateString(reminder.endDate, 1));
   const formattedAmount = formatCurrency(reminder.amount, reminder.currency);
@@ -63,10 +59,7 @@ export function buildGoogleCalendarUrl(reminder: Reminder): string {
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
-/**
- * Generates an RFC 5545 compliant .ics calendar file for Google Calendar / Android Calendar import.
- */
-export function generateIcsContent(reminders: Reminder[]): string {
+export function generateIcsContent(reminders) {
   const nowStamp = formatUtcTimestamp(new Date());
   const events = reminders.map((reminder) => {
     const dtStart = toCompactDate(reminder.startDate);
@@ -135,7 +128,7 @@ export function generateIcsContent(reminders: Reminder[]): string {
   ].join('\r\n');
 }
 
-export function downloadIcsFile(reminders: Reminder[], filename: string): void {
+export function downloadIcsFile(reminders, filename) {
   const content = generateIcsContent(reminders);
   const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });
   const url = URL.createObjectURL(blob);

@@ -1,22 +1,8 @@
 import React from 'react';
 import { Bell, BellOff, BellRing, CheckCircle2, RefreshCw } from 'lucide-react';
-import { NotificationLogItem, Reminder } from '../types/reminder';
 import { formatFullDate, getReminderWindowMetrics } from '../utils/dateRange';
-import { PermissionState } from '../utils/notifications';
 
-interface NotificationCenterProps {
-  permission: PermissionState;
-  pushEnabled: boolean;
-  reminders: Reminder[];
-  logs: NotificationLogItem[];
-  onRequestPermission: () => void;
-  onTogglePushEnabled: () => void;
-  onSendTestNotification: () => void;
-  onRunWindowCheck: () => void;
-  onClearLogs: () => void;
-}
-
-export const NotificationCenter: React.FC<NotificationCenterProps> = ({
+export const NotificationCenter = ({
   permission,
   pushEnabled,
   reminders,
@@ -113,7 +99,6 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        {/* Upcoming Scheduled Triggers */}
         <section className="rounded-2xl border border-slate-200/90 bg-white p-5">
           <h3 className="text-base font-semibold text-slate-900">
             Upcoming Alert Schedule
@@ -155,7 +140,6 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
           )}
         </section>
 
-        {/* Dispatched Notification History */}
         <section className="rounded-2xl border border-slate-200/90 bg-white p-5">
           <div className="flex items-center justify-between">
             <div>

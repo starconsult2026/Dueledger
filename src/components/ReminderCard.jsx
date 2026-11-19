@@ -10,11 +10,7 @@ import {
   RefreshCw,
   Trash2,
 } from 'lucide-react';
-import {
-  CATEGORY_LABELS,
-  RECURRENCE_LABELS,
-  Reminder,
-} from '../types/reminder';
+import { CATEGORY_LABELS, RECURRENCE_LABELS } from '../constants/reminder';
 import { buildGoogleCalendarUrl, downloadIcsFile } from '../utils/calendarExport';
 import {
   formatCurrency,
@@ -23,16 +19,7 @@ import {
   getReminderWindowMetrics,
 } from '../utils/dateRange';
 
-interface ReminderCardProps {
-  reminder: Reminder;
-  onToggleComplete: (id: string) => void;
-  onAdvanceCycle: (id: string) => void;
-  onEdit: (reminder: Reminder) => void;
-  onDelete: (reminder: Reminder) => void;
-  onMarkCalendarSynced: (id: string) => void;
-}
-
-export const ReminderCard: React.FC<ReminderCardProps> = ({
+export const ReminderCard = ({
   reminder,
   onToggleComplete,
   onAdvanceCycle,
@@ -103,7 +90,6 @@ export const ReminderCard: React.FC<ReminderCardProps> = ({
         </div>
       </div>
 
-      {/* Date Range Window & Progress */}
       <div className="mt-4">
         <div className="flex items-center justify-between text-xs text-slate-600">
           <span className="font-mono-nums">
@@ -154,7 +140,6 @@ export const ReminderCard: React.FC<ReminderCardProps> = ({
         <p className="mt-3 text-sm leading-relaxed text-slate-600">{reminder.notes}</p>
       )}
 
-      {/* Action Bar */}
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
         <div className="flex flex-wrap items-center gap-1.5">
           <button
@@ -208,7 +193,10 @@ export const ReminderCard: React.FC<ReminderCardProps> = ({
           <button
             type="button"
             onClick={() => {
-              downloadIcsFile([reminder], `${reminder.title.toLowerCase().replace(/\s+/g, '-')}.ics`);
+              downloadIcsFile(
+                [reminder],
+                `${reminder.title.toLowerCase().replace(/\s+/g, '-')}.ics`
+              );
               onMarkCalendarSynced(reminder.id);
             }}
             className="inline-flex min-h-[40px] items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 whitespace-nowrap shrink-0"

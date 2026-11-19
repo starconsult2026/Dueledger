@@ -13,14 +13,6 @@ import { SettingsView } from './components/SettingsView';
 import { SummaryStrip } from './components/SummaryStrip';
 import { TopBar } from './components/TopBar';
 import {
-  ActiveTab,
-  AppSettings,
-  DateRangePreset,
-  NotificationLogItem,
-  Reminder,
-  ServiceCategory,
-} from './types/reminder';
-import {
   addDaysToDateString,
   advanceDateByRecurrence,
   getReminderWindowMetrics,
@@ -31,7 +23,6 @@ import {
   dispatchLocalPushNotification,
   evaluateAndDispatchAlerts,
   getNotificationPermission,
-  PermissionState,
   requestNotificationPermission,
 } from './utils/notifications';
 import {
@@ -45,45 +36,35 @@ import {
 
 export default function App() {
   const [loaded, setLoaded] = useState(false);
-  const [reminders, setReminders] = useState<Reminder[]>([]);
-  const [logs, setLogs] = useState<NotificationLogItem[]>([]);
-  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
-  const [permission, setPermission] = useState<PermissionState>(() =>
-    getNotificationPermission()
-  );
+  const [reminders, setReminders] = useState([]);
+  const [logs, setLogs] = useState([]);
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [permission, setPermission] = useState(() => getNotificationPermission());
 
-  const [activeTab, setActiveTab] = useState<ActiveTab>('reminders');
-  const [preset, setPreset] = useState<DateRangePreset>('all');
-  const [customStart, setCustomStart] = useState(() =>
-    toLocalDateString(new Date())
-  );
+  const [activeTab, setActiveTab] = useState('reminders');
+  const [preset, setPreset] = useState('all');
+  const [customStart, setCustomStart] = useState(() => toLocalDateString(new Date()));
   const [customEnd, setCustomEnd] = useState(() =>
     addDaysToDateString(toLocalDateString(new Date()), 14)
   );
-  const [category, setCategory] = useState<ServiceCategory | 'all'>('all');
+  const [category, setCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showCompleted, setShowCompleted] = useState(true);
 
   const [formOpen, setFormOpen] = useState(false);
-  const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [editingReminder, setEditingReminder] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
 
-  const [confirmState, setConfirmState] = useState<{
-    open: boolean;
-    title: string;
-    description: string;
-    confirmLabel: string;
-    destructive?: boolean;
-    action: () => void;
-  }>({
+  const [confirmState, setConfirmState] = useState({
     open: false,
     title: '',
     description: '',
     confirmLabel: 'Confirm',
+    destructive: false,
     action: () => {},
   });
 
-  const showToast = useCallback((msg: string) => {
+  const showToast = useCallback((msg) => {
     setToastMessage(msg);
   }, []);
 
@@ -107,17 +88,17 @@ export default function App() {
     };
   }, []);
 
-  const persistReminders = useCallback((next: Reminder[]) => {
+  const persistReminders = useCallback((next) => {
     setReminders(next);
     void saveReminders(next);
   }, []);
 
-  const persistLogs = useCallback((next: NotificationLogItem[]) => {
+  const persistLogs = useCallback((next) => {
     setLogs(next);
     void saveNotificationLogs(next);
   }, []);
 
-  const persistSettings = useCallback((next: AppSettings) => {
+  const persistSettings = useCallback((next) => {
     setSettings(next);
     void saveSettings(next);
   }, []);
@@ -159,7 +140,13 @@ export default function App() {
       }
     }, 15 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [loaded, permission, settings.autoCheckOnLaunch, settings.pushEnabled, runWindowNotificationCheck]);
+  }, [
+    loaded,
+    permission,
+    settings.autoCheckOnLaunch,
+    settings.pushEnabled,
+    runWindowNotificationCheck,
+  ]);
 
   const handleRequestPermission = async () => {
     const result = await requestNotificationPermission();
@@ -178,7 +165,7 @@ export default function App() {
       `test-${Date.now()}`
     );
     if (ok) {
-      const item: NotificationLogItem = {
+      const item = {
         id: `test-${Date.now()}`,
         reminderId: 'manual-test',
         title: 'DueLedger Push Test',
@@ -194,20 +181,16 @@ export default function App() {
     }
   };
 
-  const handleSaveReminder = (
-    data: Omit<Reminder, 'id' | 'createdAt' | 'updatedAt' | 'completed'>
-  ) => {
+  const handleSaveReminder = (data) => {
     const now = new Date().toISOString();
     if (editingReminder) {
       const next = reminders.map((r) =>
-        r.id === editingReminder.id
-          ? { ...r, ...data, updatedAt: now }
-          : r
+        r.id === editingReminder.id ? { ...r, ...data, updatedAt: now } : r
       );
       persistReminders(next);
       showToast('Reminder updated.');
     } else {
-      const created: Reminder = {
+      const created = {
         ...data,
         id: `rem-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         completed: false,
@@ -221,7 +204,7 @@ export default function App() {
     setEditingReminder(null);
   };
 
-  const handleToggleComplete = (id: string) => {
+  const handleToggleComplete = (id) => {
     const now = new Date().toISOString();
     const next = reminders.map((r) => {
       if (r.id !== id) return r;
@@ -236,7 +219,7 @@ export default function App() {
     persistReminders(next);
   };
 
-  const handleAdvanceCycle = (id: string) => {
+  const handleAdvanceCycle = (id) => {
     const now = new Date().toISOString();
     const next = reminders.map((r) => {
       if (r.id !== id || r.recurrence === 'none') return r;
@@ -253,7 +236,7 @@ export default function App() {
     showToast('Advanced reminder to next recurring date window.');
   };
 
-  const handleDeletePrompt = (reminder: Reminder) => {
+  const handleDeletePrompt = (reminder) => {
     setConfirmState({
       open: true,
       title: `Delete "${reminder.title}"?`,
@@ -268,7 +251,7 @@ export default function App() {
     });
   };
 
-  const handleMarkCalendarSynced = (id: string) => {
+  const handleMarkCalendarSynced = (id) => {
     const now = new Date().toISOString();
     persistReminders(
       reminders.map((r) => (r.id === id ? { ...r, calendarSyncedAt: now } : r))
@@ -350,7 +333,6 @@ export default function App() {
 
       <main className="mx-auto max-w-7xl px-4 pt-5 sm:px-6 lg:px-8 lg:pt-8">
         <div className="grid gap-6 lg:grid-cols-12 lg:items-start">
-          {/* Desktop Left Rail */}
           <aside className="hidden space-y-4 lg:col-span-3 lg:block">
             <div className="rounded-2xl border border-slate-200/90 bg-white p-5">
               <h1 className="text-xl font-bold tracking-tight text-slate-900 font-display text-balance">
@@ -405,7 +387,6 @@ export default function App() {
             </div>
           </aside>
 
-          {/* Main Workspace */}
           <div className="space-y-5 lg:col-span-9">
             {activeTab === 'reminders' && (
               <>
@@ -576,7 +557,6 @@ export default function App() {
         </div>
       </main>
 
-      {/* Mobile Floating Action Button in natural thumb reach */}
       <button
         type="button"
         onClick={() => {

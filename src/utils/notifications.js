@@ -1,32 +1,24 @@
-import { NotificationLogItem, Reminder } from '../types/reminder';
 import { formatCurrency, getReminderWindowMetrics, toLocalDateString } from './dateRange';
 
-export type PermissionState = 'granted' | 'denied' | 'default' | 'unsupported';
-
-export function getNotificationPermission(): PermissionState {
+export function getNotificationPermission() {
   if (typeof window === 'undefined' || !('Notification' in window)) {
     return 'unsupported';
   }
-  return Notification.permission as PermissionState;
+  return Notification.permission;
 }
 
-export async function requestNotificationPermission(): Promise<PermissionState> {
+export async function requestNotificationPermission() {
   if (typeof window === 'undefined' || !('Notification' in window)) {
     return 'unsupported';
   }
   try {
-    const result = await Notification.requestPermission();
-    return result as PermissionState;
+    return await Notification.requestPermission();
   } catch {
-    return Notification.permission as PermissionState;
+    return Notification.permission;
   }
 }
 
-export async function dispatchLocalPushNotification(
-  title: string,
-  body: string,
-  tag?: string
-): Promise<boolean> {
+export async function dispatchLocalPushNotification(title, body, tag) {
   if (typeof window === 'undefined' || !('Notification' in window)) {
     return false;
   }
@@ -34,7 +26,7 @@ export async function dispatchLocalPushNotification(
     return false;
   }
 
-  const options: NotificationOptions & { vibrate?: number[]; renotify?: boolean } = {
+  const options = {
     body,
     icon: '/pwa-192x192.png',
     badge: '/pwa-192x192.png',
@@ -48,7 +40,7 @@ export async function dispatchLocalPushNotification(
     if ('serviceWorker' in navigator) {
       const registration = await Promise.race([
         navigator.serviceWorker.ready,
-        new Promise<null>((resolve) => setTimeout(() => resolve(null), 1200)),
+        new Promise((resolve) => setTimeout(() => resolve(null), 1200)),
       ]);
       if (registration && 'showNotification' in registration) {
         await registration.showNotification(title, options);
@@ -67,11 +59,7 @@ export async function dispatchLocalPushNotification(
   }
 }
 
-export async function evaluateAndDispatchAlerts(
-  reminders: Reminder[],
-  existingLogs: NotificationLogItem[],
-  pushEnabled: boolean
-): Promise<NotificationLogItem[]> {
+export async function evaluateAndDispatchAlerts(reminders, existingLogs, pushEnabled) {
   if (!pushEnabled) return [];
 
   const todayKey = toLocalDateString(new Date());
@@ -79,7 +67,7 @@ export async function evaluateAndDispatchAlerts(
     existingLogs.map((log) => `${log.reminderId}:${log.triggerType}:${log.dateKey}`)
   );
 
-  const newlyTriggered: NotificationLogItem[] = [];
+  const newlyTriggered = [];
 
   for (const reminder of reminders) {
     if (reminder.completed) continue;
@@ -87,7 +75,7 @@ export async function evaluateAndDispatchAlerts(
     const amountLabel = formatCurrency(reminder.amount, reminder.currency);
     const amountSuffix = amountLabel ? ` · ${amountLabel}` : '';
 
-    let triggerType: NotificationLogItem['triggerType'] | null = null;
+    let triggerType = null;
     let title = '';
     let body = '';
 

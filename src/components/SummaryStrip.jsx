@@ -1,12 +1,7 @@
 import React from 'react';
-import { Reminder } from '../types/reminder';
 import { getReminderWindowMetrics } from '../utils/dateRange';
 
-interface SummaryStripProps {
-  reminders: Reminder[];
-}
-
-export const SummaryStrip: React.FC<SummaryStripProps> = ({ reminders }) => {
+export const SummaryStrip = ({ reminders }) => {
   const metricsList = reminders.map((r) => getReminderWindowMetrics(r));
 
   const activeCount = metricsList.filter((m) => m.status === 'active').length;

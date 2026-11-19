@@ -1,27 +1,8 @@
 import React from 'react';
 import { Calendar, Search, X } from 'lucide-react';
-import {
-  CATEGORY_LABELS,
-  DateRangePreset,
-  ServiceCategory,
-} from '../types/reminder';
+import { CATEGORY_LABELS } from '../constants/reminder';
 
-interface DateRangeFilterBarProps {
-  preset: DateRangePreset;
-  onPresetChange: (preset: DateRangePreset) => void;
-  customStart: string;
-  customEnd: string;
-  onCustomStartChange: (val: string) => void;
-  onCustomEndChange: (val: string) => void;
-  category: ServiceCategory | 'all';
-  onCategoryChange: (cat: ServiceCategory | 'all') => void;
-  searchQuery: string;
-  onSearchChange: (q: string) => void;
-  showCompleted: boolean;
-  onToggleShowCompleted: () => void;
-}
-
-const PRESETS: { id: DateRangePreset; label: string }[] = [
+const PRESETS = [
   { id: 'all', label: 'All Dates' },
   { id: 'active_now', label: 'Active Now' },
   { id: 'next_7_days', label: 'Next 7 Days' },
@@ -29,7 +10,7 @@ const PRESETS: { id: DateRangePreset; label: string }[] = [
   { id: 'custom', label: 'Custom Range' },
 ];
 
-export const DateRangeFilterBar: React.FC<DateRangeFilterBarProps> = ({
+export const DateRangeFilterBar = ({
   preset,
   onPresetChange,
   customStart,
@@ -97,7 +78,7 @@ export const DateRangeFilterBar: React.FC<DateRangeFilterBarProps> = ({
 
           <select
             value={category}
-            onChange={(e) => onCategoryChange(e.target.value as ServiceCategory | 'all')}
+            onChange={(e) => onCategoryChange(e.target.value)}
             aria-label="Filter by service category"
             className="min-h-[42px] rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-teal-600 focus:outline-none"
           >

@@ -2,11 +2,7 @@ import React, { useState } from 'react';
 import { Download, Smartphone, X } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 
-interface PWAInstallButtonProps {
-  variant?: 'compact' | 'card';
-}
-
-export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ variant = 'compact' }) => {
+export const PWAInstallButton = ({ variant = 'compact' }) => {
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
   const [showGuide, setShowGuide] = useState(false);
 
@@ -87,7 +83,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ variant = 'c
               <ol className="mt-4 space-y-2.5 text-sm text-slate-700">
                 <li>1. Open DueLedger in Chrome on your Android phone.</li>
                 <li>2. Tap the three-dot browser menu in the top-right corner.</li>
-                <li>3. Tap Install app or Add to Home screen to install the standalone APK-free web app.</li>
+                <li>3. Tap Install app or Add to Home screen to install the standalone web app.</li>
               </ol>
             )}
 

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { CalendarPlus, Download, ExternalLink } from 'lucide-react';
-import { CATEGORY_LABELS, Reminder } from '../types/reminder';
+import { CATEGORY_LABELS } from '../constants/reminder';
 import { buildGoogleCalendarUrl, downloadIcsFile } from '../utils/calendarExport';
 import {
   addDaysToDateString,
@@ -13,13 +13,7 @@ import {
   toLocalDateString,
 } from '../utils/dateRange';
 
-interface DateRangeTimelineProps {
-  reminders: Reminder[];
-  onEdit: (reminder: Reminder) => void;
-  onMarkCalendarSynced: (id: string) => void;
-}
-
-export const DateRangeTimeline: React.FC<DateRangeTimelineProps> = ({
+export const DateRangeTimeline = ({
   reminders,
   onEdit,
   onMarkCalendarSynced,
@@ -133,7 +127,6 @@ export const DateRangeTimeline: React.FC<DateRangeTimelineProps> = ({
         </div>
       </div>
 
-      {/* Timeline Visualization */}
       <div className="rounded-2xl border border-slate-200/90 bg-white p-5">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3 text-xs text-slate-500 font-mono-nums">
           <span>{formatFullDate(rangeStart)}</span>
@@ -159,7 +152,7 @@ export const DateRangeTimeline: React.FC<DateRangeTimelineProps> = ({
                 className="pointer-events-none absolute bottom-0 top-0 z-10 w-px bg-rose-500/70"
                 style={{ left: `${todayOffsetPct}%` }}
               >
-                <span className=" -translate-x-1/2 rounded bg-rose-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                <span className="-translate-x-1/2 rounded bg-rose-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
                   Today
                 </span>
               </div>

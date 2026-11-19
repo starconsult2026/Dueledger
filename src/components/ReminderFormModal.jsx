@@ -1,37 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
-import {
-  CATEGORY_LABELS,
-  RECURRENCE_LABELS,
-  RecurrencePattern,
-  Reminder,
-  ServiceCategory,
-} from '../types/reminder';
+import { CATEGORY_LABELS, RECURRENCE_LABELS } from '../constants/reminder';
 import {
   addDaysToDateString,
   diffCalendarDays,
   toLocalDateString,
 } from '../utils/dateRange';
 
-interface ReminderFormModalProps {
-  open: boolean;
-  initialReminder: Reminder | null;
-  defaultCurrency: string;
-  defaultLeadDays: number[];
-  onClose: () => void;
-  onSave: (data: Omit<Reminder, 'id' | 'createdAt' | 'updatedAt' | 'completed'>) => void;
-}
-
-interface QuickTemplate {
-  label: string;
-  title: string;
-  provider: string;
-  category: ServiceCategory;
-  spanDays: number;
-  recurrence: RecurrencePattern;
-}
-
-const TEMPLATES: QuickTemplate[] = [
+const TEMPLATES = [
   {
     label: 'Credit Card Window',
     title: 'Credit Card Statement Payment',
@@ -72,6 +48,14 @@ const TEMPLATES: QuickTemplate[] = [
     spanDays: 15,
     recurrence: 'annual',
   },
+  {
+    label: 'Others',
+    title: 'Personal Reminder Window',
+    provider: 'personal',
+    category: 'other',
+    spanDays: 7,
+    recurrence: 'none',
+  },
 ];
 
 const LEAD_DAY_OPTIONS = [
@@ -81,7 +65,7 @@ const LEAD_DAY_OPTIONS = [
   { value: 0, label: 'On end date' },
 ];
 
-export const ReminderFormModal: React.FC<ReminderFormModalProps> = ({
+export const ReminderFormModal = ({
   open,
   initialReminder,
   defaultCurrency,
@@ -94,14 +78,14 @@ export const ReminderFormModal: React.FC<ReminderFormModalProps> = ({
   const [title, setTitle] = useState('');
   const [provider, setProvider] = useState('');
   const [accountRef, setAccountRef] = useState('');
-  const [category, setCategory] = useState<ServiceCategory>('banking');
+  const [category, setCategory] = useState('banking');
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(addDaysToDateString(today, 10));
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState(defaultCurrency);
-  const [recurrence, setRecurrence] = useState<RecurrencePattern>('monthly');
+  const [recurrence, setRecurrence] = useState('monthly');
   const [notifyOnStart, setNotifyOnStart] = useState(true);
-  const [notifyDaysBefore, setNotifyDaysBefore] = useState<number[]>(defaultLeadDays);
+  const [notifyDaysBefore, setNotifyDaysBefore] = useState(defaultLeadDays);
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
 
@@ -144,7 +128,7 @@ export const ReminderFormModal: React.FC<ReminderFormModalProps> = ({
   const spanDays =
     startDate && endDate ? diffCalendarDays(startDate, endDate) + 1 : 0;
 
-  const applyTemplate = (tpl: QuickTemplate) => {
+  const applyTemplate = (tpl) => {
     setTitle(tpl.title);
     setProvider(tpl.provider);
     setCategory(tpl.category);
@@ -153,13 +137,13 @@ export const ReminderFormModal: React.FC<ReminderFormModalProps> = ({
     setEndDate(addDaysToDateString(today, tpl.spanDays));
   };
 
-  const toggleLeadDay = (day: number) => {
+  const toggleLeadDay = (day) => {
     setNotifyDaysBefore((prev) =>
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort((a, b) => b - a)
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!title.trim()) {
       setError('Please enter a reminder title.');
@@ -286,7 +270,7 @@ export const ReminderFormModal: React.FC<ReminderFormModalProps> = ({
               </label>
               <select
                 value={category}
-                onChange={(e) => setCategory(e.target.value as ServiceCategory)}
+                onChange={(e) => setCategory(e.target.value)}
                 className="mt-1 min-h-[44px] w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-teal-600 focus:outline-none"
               >
                 {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
@@ -298,7 +282,6 @@ export const ReminderFormModal: React.FC<ReminderFormModalProps> = ({
             </div>
           </div>
 
-          {/* Date Range Picker Section */}
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-slate-800">
@@ -393,7 +376,7 @@ export const ReminderFormModal: React.FC<ReminderFormModalProps> = ({
             </label>
             <select
               value={recurrence}
-              onChange={(e) => setRecurrence(e.target.value as RecurrencePattern)}
+              onChange={(e) => setRecurrence(e.target.value)}
               className="mt-1 min-h-[44px] w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-teal-600 focus:outline-none"
             >
               {Object.entries(RECURRENCE_LABELS).map(([key, label]) => (
