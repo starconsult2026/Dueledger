@@ -40,16 +40,17 @@ export function formatFullDate(dateStr) {
   });
 }
 
-export function formatCurrency(amount, currency) {
+export function formatCurrency(amount, currency = 'INR') {
   if (amount === undefined || amount === null || Number.isNaN(amount)) return null;
+  const targetCurrency = currency || 'INR';
   try {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: currency || 'USD',
+      currency: targetCurrency,
       maximumFractionDigits: 2,
     }).format(amount);
   } catch {
-    return `${currency} ${Number(amount).toFixed(2)}`;
+    return `₹${Number(amount).toFixed(2)}`;
   }
 }
 

@@ -1,7 +1,9 @@
 import React from 'react';
-import { Calendar, Download, ExternalLink, FileCode2, RotateCcw, Trash2 } from 'lucide-react';
+import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { COLORS, FONTS } from '../theme/tokens';
 import { downloadIcsFile } from '../utils/calendarExport';
 import { PWAInstallButton } from './PWAInstallButton';
+import { CalendarIcon, GlyphIcon } from './RNIcons';
 
 const LEAD_OPTIONS = [
   { day: 7, label: '7 days before' },
@@ -10,6 +12,8 @@ const LEAD_OPTIONS = [
   { day: 0, label: 'Due day' },
 ];
 
+const CURRENCY_OPTIONS = [{ code: 'INR', label: 'INR (₹ Rupees)' }];
+
 export const SettingsView = ({
   settings,
   reminders,
@@ -17,11 +21,20 @@ export const SettingsView = ({
   onResetDemoData,
   onClearAllReminders,
 }) => {
-  const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  const host = typeof window !== 'undefined' ? window.location.host : 'dueledger.app';
-  const pwabuilderUrl = `https://www.pwabuilder.com/reportcard?site=${encodeURIComponent(origin)}`;
+  const origin =
+    Platform.OS === 'web' && typeof window !== 'undefined'
+      ? window.location.origin
+      : 'https://dueledger.app';
+  const host =
+    Platform.OS === 'web' && typeof window !== 'undefined'
+      ? window.location.host
+      : 'dueledger.app';
+  const pwabuilderUrl = `https://www.pwabuilder.com/reportcard?site=${encodeURIComponent(
+    origin
+  )}`;
 
   const handleDownloadTwaManifest = () => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
     const twaManifest = {
       packageId: 'app.dueledger.reminders',
       host,
@@ -70,144 +83,256 @@ export const SettingsView = ({
   };
 
   return (
-    <div className="grid gap-5 lg:grid-cols-2">
-      <section className="rounded-2xl border border-slate-200/90 bg-white p-5 space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-900 font-display">
-            Android App & APK Packaging
-          </h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Install directly on Android Chrome as a standalone WebAPK, or generate a downloadable signed .apk package via PWABuilder or Bubblewrap.
-          </p>
-        </div>
+    <View style={styles.container}>
+      <View style={styles.card}>
+        <Text style={styles.title}>Android App & APK Packaging</Text>
+        <Text style={styles.subtitle}>
+          Install directly on Android Chrome as a standalone WebAPK, or generate a downloadable signed .apk package via PWABuilder or Bubblewrap.
+        </Text>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <View style={styles.wrapRow}>
           <PWAInstallButton variant="card" />
 
-          <a
-            href={pwabuilderUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50 whitespace-nowrap"
+          <Pressable
+            onPress={() => Linking.openURL(pwabuilderUrl).catch(() => {})}
+            style={styles.outlineBtn}
           >
-            <span>Package APK via PWABuilder</span>
-            <ExternalLink className="h-4 w-4 text-slate-500" />
-          </a>
+            <Text style={styles.outlineText}>Package APK via PWABuilder ↗</Text>
+          </Pressable>
 
-          <button
-            type="button"
-            onClick={handleDownloadTwaManifest}
-            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 whitespace-nowrap"
-          >
-            <FileCode2 className="h-4 w-4 text-teal-700" />
-            <span>Download twa-manifest.json</span>
-          </button>
-        </div>
-      </section>
+          {Platform.OS === 'web' && (
+            <Pressable
+              onPress={handleDownloadTwaManifest}
+              style={styles.mutedBtn}
+            >
+              <Text style={styles.mutedText}>Download twa-manifest.json</Text>
+            </Pressable>
+          )}
+        </View>
+      </View>
 
-      <section className="rounded-2xl border border-slate-200/90 bg-white p-5 space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-900 font-display">
-            Google Calendar Export & Backup
-          </h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Download all {reminders.length} reminders as a standard .ics calendar file with built-in date-range alarms to import into Google Calendar.
-          </p>
-        </div>
+      <View style={styles.card}>
+        <Text style={styles.title}>Google Calendar Export & Backup</Text>
+        <Text style={styles.subtitle}>
+          Download all {reminders.length} reminders as a standard .ics calendar file with built-in date-range alarms to import into Google Calendar.
+        </Text>
 
-        <button
-          type="button"
-          disabled={reminders.length === 0}
-          onClick={() => downloadIcsFile(reminders, 'dueledger-all-reminders.ics')}
-          className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-        >
-          <Calendar className="h-4 w-4" />
-          <span>Export All Reminders (.ics)</span>
-          <Download className="h-4 w-4" />
-        </button>
-      </section>
+        {Platform.OS === 'web' && (
+          <View style={styles.wrapRow}>
+            <Pressable
+              disabled={reminders.length === 0}
+              onPress={() =>
+                downloadIcsFile(reminders, 'dueledger-all-reminders.ics')
+              }
+              style={[styles.darkBtn, reminders.length === 0 && styles.disabledBtn]}
+            >
+              <CalendarIcon size={15} color={COLORS.white} />
+              <Text style={styles.darkBtnText}>
+                Export All Reminders (.ics)
+              </Text>
+              <GlyphIcon symbol="↓" size={14} color={COLORS.white} />
+            </Pressable>
+          </View>
+        )}
+      </View>
 
-      <section className="rounded-2xl border border-slate-200/90 bg-white p-5 space-y-4">
-        <h2 className="text-lg font-semibold text-slate-900 font-display">
-          Reminder Defaults
-        </h2>
+      <View style={styles.card}>
+        <Text style={styles.title}>Reminder Defaults</Text>
 
-        <div>
-          <label className="block text-xs font-medium text-slate-700">
-            Default Currency
-          </label>
-          <select
-            value={settings.defaultCurrency}
-            onChange={(e) =>
-              onUpdateSettings({ ...settings, defaultCurrency: e.target.value })
-            }
-            className="mt-1 min-h-[44px] w-full max-w-xs rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-teal-600 focus:outline-none"
-          >
-            <option value="USD">USD ($)</option>
-            <option value="INR">INR (₹)</option>
-            <option value="EUR">EUR (€)</option>
-            <option value="GBP">GBP (£)</option>
-            <option value="CAD">CAD ($)</option>
-            <option value="AUD">AUD ($)</option>
-          </select>
-        </div>
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>Default Currency</Text>
+          <View style={styles.wrapRow}>
+            {CURRENCY_OPTIONS.map((curr) => {
+              const active = settings.defaultCurrency === curr.code;
+              return (
+                <Pressable
+                  key={curr.code}
+                  onPress={() =>
+                    onUpdateSettings({ ...settings, defaultCurrency: curr.code })
+                  }
+                  style={[styles.chipBtn, active && styles.chipBtnActive]}
+                >
+                  <Text
+                    style={[styles.chipText, active && styles.chipTextActive]}
+                  >
+                    {curr.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
 
-        <div>
-          <p className="text-xs font-medium text-slate-700">
-            Default Push Notification Lead Times
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2">
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>Default Push Notification Lead Times</Text>
+          <View style={styles.wrapRow}>
             {LEAD_OPTIONS.map((opt) => {
               const active = settings.defaultLeadDays.includes(opt.day);
               return (
-                <button
+                <Pressable
                   key={opt.day}
-                  type="button"
-                  onClick={() => toggleDefaultLead(opt.day)}
-                  className={`min-h-[40px] rounded-xl border px-3 py-1.5 text-xs font-medium transition whitespace-nowrap ${
-                    active
-                      ? 'border-teal-700 bg-teal-50 text-teal-800'
-                      : 'border-slate-200 bg-white text-slate-600'
-                  }`}
+                  onPress={() => toggleDefaultLead(opt.day)}
+                  style={[styles.chipBtn, active && styles.chipBtnActive]}
                 >
-                  {opt.label}
-                </button>
+                  <Text
+                    style={[styles.chipText, active && styles.chipTextActive]}
+                  >
+                    {opt.label}
+                  </Text>
+                </Pressable>
               );
             })}
-          </div>
-        </div>
-      </section>
+          </View>
+        </View>
+      </View>
 
-      <section className="rounded-2xl border border-slate-200/90 bg-white p-5 space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-900 font-display">
-            Local Device Storage
-          </h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Reminders are stored privately on your device using IndexedDB so they remain available offline.
-          </p>
-        </div>
+      <View style={styles.card}>
+        <Text style={styles.title}>Local Device Storage</Text>
+        <Text style={styles.subtitle}>
+          Reminders are stored privately on your device so they remain available offline.
+        </Text>
 
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={onResetDemoData}
-            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            <RotateCcw className="h-4 w-4" />
-            Restore Sample Reminders
-          </button>
+        <View style={styles.wrapRow}>
+          <Pressable onPress={onResetDemoData} style={styles.outlineBtn}>
+            <GlyphIcon symbol="↻" size={14} color={COLORS.inkSecondary} />
+            <Text style={styles.outlineText}>Restore Sample Reminders</Text>
+          </Pressable>
 
-          <button
-            type="button"
-            onClick={onClearAllReminders}
-            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 hover:bg-rose-100"
-          >
-            <Trash2 className="h-4 w-4" />
-            Clear All Reminders
-          </button>
-        </div>
-      </section>
-    </div>
+          <Pressable onPress={onClearAllReminders} style={styles.dangerBtn}>
+            <GlyphIcon symbol="✕" size={13} color={COLORS.rose} />
+            <Text style={styles.dangerText}>Clear All Reminders</Text>
+          </Pressable>
+        </View>
+      </View>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    gap: 16,
+  },
+  card: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 18,
+    gap: 12,
+  },
+  title: {
+    fontFamily: FONTS.display,
+    fontSize: 17,
+    fontWeight: '700',
+    color: COLORS.inkPrimary,
+  },
+  subtitle: {
+    fontFamily: FONTS.sans,
+    fontSize: 13,
+    lineHeight: 19,
+    color: COLORS.inkSecondary,
+  },
+  wrapRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  outlineBtn: {
+    minHeight: 44,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.borderStrong,
+    backgroundColor: COLORS.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  outlineText: {
+    fontFamily: FONTS.sans,
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.inkPrimary,
+  },
+  mutedBtn: {
+    minHeight: 44,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.bgCanvas,
+    justifyContent: 'center',
+  },
+  mutedText: {
+    fontFamily: FONTS.sans,
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.inkSecondary,
+  },
+  darkBtn: {
+    minHeight: 44,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: COLORS.inkPrimary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  darkBtnText: {
+    fontFamily: FONTS.sans,
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.white,
+  },
+  disabledBtn: {
+    opacity: 0.45,
+  },
+  fieldGroup: {
+    gap: 6,
+  },
+  label: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.inkSecondary,
+  },
+  chipBtn: {
+    minHeight: 40,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surface,
+    justifyContent: 'center',
+  },
+  chipBtnActive: {
+    borderColor: COLORS.teal,
+    backgroundColor: COLORS.tealBg,
+  },
+  chipText: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.inkSecondary,
+  },
+  chipTextActive: {
+    color: COLORS.tealDark,
+  },
+  dangerBtn: {
+    minHeight: 44,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.roseBorder,
+    backgroundColor: COLORS.roseBg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dangerText: {
+    fontFamily: FONTS.sans,
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.rose,
+  },
+});

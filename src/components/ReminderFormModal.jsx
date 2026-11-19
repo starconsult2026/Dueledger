@@ -1,11 +1,27 @@
 import React, { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { CATEGORY_LABELS, RECURRENCE_LABELS } from '../constants/reminder';
+import { COLORS, FONTS } from '../theme/tokens';
 import {
   addDaysToDateString,
   diffCalendarDays,
   toLocalDateString,
 } from '../utils/dateRange';
+import { DateField } from './DateField';
+import { CloseIcon } from './RNIcons';
+import { SelectDropdown } from './SelectDropdown';
+
+const CATEGORY_OPTIONS = Object.entries(CATEGORY_LABELS).map(
+  ([value, label]) => ({ value, label })
+);
 
 const TEMPLATES = [
   {
@@ -15,14 +31,6 @@ const TEMPLATES = [
     category: 'credit_card',
     spanDays: 14,
     recurrence: 'monthly',
-  },
-  {
-    label: 'FD / CD Maturity',
-    title: 'Fixed Deposit Renewal Window',
-    provider: 'Personal Bank',
-    category: 'banking',
-    spanDays: 10,
-    recurrence: 'annual',
   },
   {
     label: 'Loan EMI Window',
@@ -82,7 +90,6 @@ export const ReminderFormModal = ({
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(addDaysToDateString(today, 10));
   const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState(defaultCurrency);
   const [recurrence, setRecurrence] = useState('monthly');
   const [notifyOnStart, setNotifyOnStart] = useState(true);
   const [notifyDaysBefore, setNotifyDaysBefore] = useState(defaultLeadDays);
@@ -102,7 +109,6 @@ export const ReminderFormModal = ({
       setAmount(
         initialReminder.amount !== undefined ? String(initialReminder.amount) : ''
       );
-      setCurrency(initialReminder.currency || defaultCurrency);
       setRecurrence(initialReminder.recurrence);
       setNotifyOnStart(initialReminder.notifyOnStart);
       setNotifyDaysBefore(initialReminder.notifyDaysBefore);
@@ -115,15 +121,12 @@ export const ReminderFormModal = ({
       setStartDate(today);
       setEndDate(addDaysToDateString(today, 10));
       setAmount('');
-      setCurrency(defaultCurrency);
       setRecurrence('monthly');
       setNotifyOnStart(true);
       setNotifyDaysBefore(defaultLeadDays);
       setNotes('');
     }
   }, [open, initialReminder, defaultCurrency, defaultLeadDays, today]);
-
-  if (!open) return null;
 
   const spanDays =
     startDate && endDate ? diffCalendarDays(startDate, endDate) + 1 : 0;
@@ -139,12 +142,13 @@ export const ReminderFormModal = ({
 
   const toggleLeadDay = (day) => {
     setNotifyDaysBefore((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort((a, b) => b - a)
+      prev.includes(day)
+        ? prev.filter((d) => d !== day)
+        : [...prev, day].sort((a, b) => b - a)
     );
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = () => {
     if (!title.trim()) {
       setError('Please enter a reminder title.');
       return;
@@ -176,7 +180,7 @@ export const ReminderFormModal = ({
       startDate,
       endDate,
       amount: parsedAmount,
-      currency,
+      currency: 'INR',
       notifyDaysBefore,
       notifyOnStart,
       recurrence,
@@ -187,270 +191,437 @@ export const ReminderFormModal = ({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 backdrop-blur-xs sm:items-center sm:p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="reminder-form-title"
-    >
-      <div className="flex max-h-[92vh] w-full max-w-xl flex-col rounded-t-3xl bg-white shadow-2xl sm:rounded-2xl">
-        <div className="mx-auto mt-3 h-1.5 w-10 rounded-full bg-slate-200 sm:hidden" />
+    <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.backdrop}>
+        <View style={styles.sheet}>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>
+              {initialReminder ? 'Edit Service Window' : 'New Bank or Service Reminder'}
+            </Text>
+            <Pressable
+              onPress={onClose}
+              accessibilityRole="button"
+              accessibilityLabel="Close form"
+              style={styles.closeBtn}
+            >
+              <CloseIcon size={18} color={COLORS.inkMuted} />
+            </Pressable>
+          </View>
 
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <h2 id="reminder-form-title" className="text-lg font-semibold text-slate-900">
-            {initialReminder ? 'Edit Service Window' : 'New Bank or Service Reminder'}
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-            aria-label="Close form"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+          <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
+            {!initialReminder && (
+              <View style={styles.fieldGroup}>
+                <Text style={styles.sectionMiniLabel}>Quick Templates</Text>
+                <View style={styles.wrapRow}>
+                  {TEMPLATES.map((tpl) => (
+                    <Pressable
+                      key={tpl.label}
+                      onPress={() => applyTemplate(tpl)}
+                      style={styles.templateBtn}
+                    >
+                      <Text style={styles.templateBtnText}>{tpl.label}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            )}
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-          {!initialReminder && (
-            <div>
-              <p className="mb-2 text-xs font-medium text-slate-500">Quick Templates</p>
-              <div className="flex flex-wrap gap-1.5">
-                {TEMPLATES.map((tpl) => (
-                  <button
-                    key={tpl.label}
-                    type="button"
-                    onClick={() => applyTemplate(tpl)}
-                    className="min-h-[36px] rounded-xl border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700 transition hover:border-teal-600 hover:bg-teal-50 hover:text-teal-800 whitespace-nowrap"
-                  >
-                    {tpl.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+            {!!error && (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
 
-          {error && (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-800">
-              {error}
-            </div>
-          )}
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-slate-700">
-                Reminder Title
-              </label>
-              <input
-                type="text"
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Reminder Title</Text>
+              <TextInput
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChangeText={setTitle}
                 placeholder="e.g., HDFC Credit Card Payment Window"
-                className="mt-1 min-h-[44px] w-full rounded-xl border border-slate-200 px-3.5 text-sm text-slate-900 focus:border-teal-600 focus:outline-none"
-                required
+                placeholderTextColor={COLORS.inkMuted}
+                style={styles.input}
               />
-            </div>
+            </View>
 
-            <div>
-              <label className="block text-xs font-medium text-slate-700">
-                Bank or Service Provider
-              </label>
-              <input
-                type="text"
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Bank or Service Provider</Text>
+              <TextInput
                 value={provider}
-                onChange={(e) => setProvider(e.target.value)}
+                onChangeText={setProvider}
                 placeholder="e.g., Chase Bank, City Water"
-                className="mt-1 min-h-[44px] w-full rounded-xl border border-slate-200 px-3.5 text-sm text-slate-900 focus:border-teal-600 focus:outline-none"
-                required
+                placeholderTextColor={COLORS.inkMuted}
+                style={styles.input}
               />
-            </div>
+            </View>
 
-            <div>
-              <label className="block text-xs font-medium text-slate-700">
-                Service Category
-              </label>
-              <select
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Service Category</Text>
+              <SelectDropdown
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="mt-1 min-h-[44px] w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-teal-600 focus:outline-none"
-              >
-                {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-                  <option key={key} value={key}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-800">
-                Action Date Range Window
-              </span>
-              <span className="text-xs font-medium text-teal-700 font-mono-nums">
-                {spanDays > 0 ? `${spanDays}-day window` : 'Check dates'}
-              </span>
-            </div>
-
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-slate-600">Window Start Date</label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setStartDate(val);
-                    if (endDate && val > endDate) {
-                      setEndDate(val);
-                    }
-                  }}
-                  className="mt-1 min-h-[44px] w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 font-mono-nums focus:border-teal-600 focus:outline-none"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs text-slate-600">Due / Window End Date</label>
-                <input
-                  type="date"
-                  value={endDate}
-                  min={startDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="mt-1 min-h-[44px] w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 font-mono-nums focus:border-teal-600 focus:outline-none"
-                  required
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div>
-              <label className="block text-xs font-medium text-slate-700">
-                Amount (Optional)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-                className="mt-1 min-h-[44px] w-full rounded-xl border border-slate-200 px-3.5 text-sm text-slate-900 font-mono-nums focus:border-teal-600 focus:outline-none"
+                options={CATEGORY_OPTIONS}
+                onChange={setCategory}
+                accessibilityLabel="Service Category"
               />
-            </div>
+            </View>
 
-            <div>
-              <label className="block text-xs font-medium text-slate-700">Currency</label>
-              <select
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-                className="mt-1 min-h-[44px] w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-teal-600 focus:outline-none"
-              >
-                <option value="USD">USD ($)</option>
-                <option value="INR">INR (₹)</option>
-                <option value="EUR">EUR (€)</option>
-                <option value="GBP">GBP (£)</option>
-                <option value="CAD">CAD ($)</option>
-                <option value="AUD">AUD ($)</option>
-              </select>
-            </div>
+            <View style={styles.dateBox}>
+              <View style={styles.dateBoxHeader}>
+                <Text style={styles.dateBoxTitle}>Action Date Range Window</Text>
+                <Text style={styles.spanBadge}>
+                  {spanDays > 0 ? `${spanDays}-day window` : 'Check dates'}
+                </Text>
+              </View>
 
-            <div>
-              <label className="block text-xs font-medium text-slate-700">
-                Account / Ref
-              </label>
-              <input
-                type="text"
-                value={accountRef}
-                onChange={(e) => setAccountRef(e.target.value)}
-                placeholder="e.g., •••• 4821"
-                className="mt-1 min-h-[44px] w-full rounded-xl border border-slate-200 px-3.5 text-sm text-slate-900 font-mono-nums focus:border-teal-600 focus:outline-none"
-              />
-            </div>
-          </div>
+              <View style={styles.twoCol}>
+                <View style={styles.col}>
+                  <Text style={styles.subLabel}>Window Start Date</Text>
+                  <DateField
+                    value={startDate}
+                    onChange={(val) => {
+                      setStartDate(val);
+                      if (endDate && val > endDate) setEndDate(val);
+                    }}
+                    accessibilityLabel="Window Start Date"
+                  />
+                </View>
+                <View style={styles.col}>
+                  <Text style={styles.subLabel}>Due / Window End Date</Text>
+                  <DateField
+                    value={endDate}
+                    min={startDate}
+                    onChange={setEndDate}
+                    accessibilityLabel="Due or Window End Date"
+                  />
+                </View>
+              </View>
+            </View>
 
-          <div>
-            <label className="block text-xs font-medium text-slate-700">
-              Recurrence Schedule
-            </label>
-            <select
-              value={recurrence}
-              onChange={(e) => setRecurrence(e.target.value)}
-              className="mt-1 min-h-[44px] w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-teal-600 focus:outline-none"
-            >
-              {Object.entries(RECURRENCE_LABELS).map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
+            <View style={styles.twoCol}>
+              <View style={styles.col}>
+                <Text style={styles.label}>Amount in ₹ (Optional)</Text>
+                <TextInput
+                  value={amount}
+                  onChangeText={setAmount}
+                  keyboardType="decimal-pad"
+                  placeholder="0.00"
+                  placeholderTextColor={COLORS.inkMuted}
+                  style={[styles.input, styles.monoInput]}
+                />
+              </View>
 
-          <div>
-            <p className="text-xs font-medium text-slate-700">Push Notification Triggers</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => setNotifyOnStart((prev) => !prev)}
-                className={`min-h-[38px] rounded-xl border px-3 py-1.5 text-xs font-medium transition whitespace-nowrap ${
-                  notifyOnStart
-                    ? 'border-teal-700 bg-teal-50 text-teal-800'
-                    : 'border-slate-200 bg-white text-slate-600'
-                }`}
-              >
-                When window starts
-              </button>
-              {LEAD_DAY_OPTIONS.map((opt) => {
-                const active = notifyDaysBefore.includes(opt.value);
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => toggleLeadDay(opt.value)}
-                    className={`min-h-[38px] rounded-xl border px-3 py-1.5 text-xs font-medium transition whitespace-nowrap ${
-                      active
-                        ? 'border-teal-700 bg-teal-50 text-teal-800'
-                        : 'border-slate-200 bg-white text-slate-600'
-                    }`}
+              <View style={styles.col}>
+                <Text style={styles.label}>Account / Ref</Text>
+                <TextInput
+                  value={accountRef}
+                  onChangeText={setAccountRef}
+                  placeholder="e.g., •••• 4821"
+                  placeholderTextColor={COLORS.inkMuted}
+                  style={[styles.input, styles.monoInput]}
+                />
+              </View>
+            </View>
+
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Recurrence Schedule</Text>
+              <View style={styles.wrapRow}>
+                {Object.entries(RECURRENCE_LABELS).map(([key, label]) => {
+                  const active = recurrence === key;
+                  return (
+                    <Pressable
+                      key={key}
+                      onPress={() => setRecurrence(key)}
+                      style={[styles.choiceBtn, active && styles.choiceBtnActive]}
+                    >
+                      <Text
+                        style={[
+                          styles.choiceBtnText,
+                          active && styles.choiceBtnTextActive,
+                        ]}
+                      >
+                        {label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Push Notification Triggers</Text>
+              <View style={styles.wrapRow}>
+                <Pressable
+                  onPress={() => setNotifyOnStart((prev) => !prev)}
+                  style={[styles.choiceBtn, notifyOnStart && styles.choiceBtnActive]}
+                >
+                  <Text
+                    style={[
+                      styles.choiceBtnText,
+                      notifyOnStart && styles.choiceBtnTextActive,
+                    ]}
                   >
-                    {opt.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+                    When window starts
+                  </Text>
+                </Pressable>
+                {LEAD_DAY_OPTIONS.map((opt) => {
+                  const active = notifyDaysBefore.includes(opt.value);
+                  return (
+                    <Pressable
+                      key={opt.value}
+                      onPress={() => toggleLeadDay(opt.value)}
+                      style={[styles.choiceBtn, active && styles.choiceBtnActive]}
+                    >
+                      <Text
+                        style={[
+                          styles.choiceBtnText,
+                          active && styles.choiceBtnTextActive,
+                        ]}
+                      >
+                        {opt.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
 
-          <div>
-            <label className="block text-xs font-medium text-slate-700">
-              Notes (Optional)
-            </label>
-            <textarea
-              rows={2}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Payment method, minimum due, or renewal instructions..."
-              className="mt-1 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-900 focus:border-teal-600 focus:outline-none"
-            />
-          </div>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Notes (Optional)</Text>
+              <TextInput
+                value={notes}
+                onChangeText={setNotes}
+                multiline
+                numberOfLines={3}
+                placeholder="Payment method, minimum due, or renewal instructions..."
+                placeholderTextColor={COLORS.inkMuted}
+                style={[styles.input, styles.textArea]}
+              />
+            </View>
+          </ScrollView>
 
-          <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="min-h-[44px] rounded-xl border border-slate-200 bg-white px-5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="min-h-[44px] rounded-xl bg-teal-700 px-6 py-2 text-sm font-medium text-white shadow-xs hover:bg-teal-800 active:scale-[0.98]"
-            >
-              {initialReminder ? 'Save Changes' : 'Save Reminder'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+          <View style={styles.footer}>
+            <Pressable onPress={onClose} style={styles.cancelBtn}>
+              <Text style={styles.cancelText}>Cancel</Text>
+            </Pressable>
+            <Pressable onPress={handleSubmit} style={styles.saveBtn}>
+              <Text style={styles.saveText}>
+                {initialReminder ? 'Save Changes' : 'Save Reminder'}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
   );
 };
+
+const styles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: COLORS.overlay,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  sheet: {
+    width: '100%',
+    maxWidth: 600,
+    maxHeight: '90%',
+    backgroundColor: COLORS.surface,
+    borderRadius: 22,
+    overflow: 'hidden',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.surfaceMuted,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+  },
+  headerTitle: {
+    fontFamily: FONTS.display,
+    fontSize: 17,
+    fontWeight: '700',
+    color: COLORS.inkPrimary,
+  },
+  closeBtn: {
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  body: {
+    flex: 1,
+  },
+  bodyContent: {
+    padding: 20,
+    gap: 16,
+  },
+  sectionMiniLabel: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.inkMuted,
+    marginBottom: 6,
+  },
+  wrapRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  templateBtn: {
+    minHeight: 36,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.bgCanvas,
+    justifyContent: 'center',
+  },
+  templateBtnText: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.inkSecondary,
+  },
+  errorBox: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.roseBorder,
+    backgroundColor: COLORS.roseBg,
+    padding: 12,
+  },
+  errorText: {
+    fontFamily: FONTS.sans,
+    fontSize: 13,
+    color: COLORS.rose,
+  },
+  fieldGroup: {
+    gap: 6,
+  },
+  label: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.inkSecondary,
+  },
+  subLabel: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    color: COLORS.inkSecondary,
+    marginBottom: 4,
+  },
+  input: {
+    minHeight: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surface,
+    paddingHorizontal: 12,
+    fontFamily: FONTS.sans,
+    fontSize: 14,
+    color: COLORS.inkPrimary,
+  },
+  monoInput: {
+    fontFamily: FONTS.mono,
+  },
+  textArea: {
+    minHeight: 74,
+    paddingTop: 10,
+    textAlignVertical: 'top',
+  },
+  choiceBtn: {
+    minHeight: 38,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surface,
+    justifyContent: 'center',
+  },
+  choiceBtnActive: {
+    borderColor: COLORS.teal,
+    backgroundColor: COLORS.tealBg,
+  },
+  choiceBtnText: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.inkSecondary,
+  },
+  choiceBtnTextActive: {
+    color: COLORS.tealDark,
+  },
+  dateBox: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.bgCanvas,
+    padding: 14,
+    gap: 12,
+  },
+  dateBoxHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dateBoxTitle: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.inkPrimary,
+  },
+  spanBadge: {
+    fontFamily: FONTS.mono,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.teal,
+  },
+  twoCol: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  col: {
+    flex: 1,
+    gap: 4,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.surfaceMuted,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+  },
+  cancelBtn: {
+    minHeight: 44,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cancelText: {
+    fontFamily: FONTS.sans,
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.inkSecondary,
+  },
+  saveBtn: {
+    minHeight: 44,
+    paddingHorizontal: 22,
+    borderRadius: 12,
+    backgroundColor: COLORS.teal,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  saveText: {
+    fontFamily: FONTS.sans,
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.white,
+  },
+});

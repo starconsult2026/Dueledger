@@ -12,7 +12,7 @@ const STORE_NAME = 'kv';
 export const DEFAULT_SETTINGS = {
   pushEnabled: true,
   defaultLeadDays: [3, 1, 0],
-  defaultCurrency: 'USD',
+  defaultCurrency: 'INR',
   autoCheckOnLaunch: true,
 };
 
@@ -30,7 +30,7 @@ export function createStarterReminders() {
       startDate: addDaysToDateString(today, -10),
       endDate: addDaysToDateString(today, 2),
       amount: 1480.5,
-      currency: 'USD',
+      currency: 'INR',
       notifyDaysBefore: [7, 3, 1, 0],
       notifyOnStart: true,
       recurrence: 'monthly',
@@ -48,7 +48,7 @@ export function createStarterReminders() {
       startDate: addDaysToDateString(today, -4),
       endDate: addDaysToDateString(today, 9),
       amount: 12500,
-      currency: 'USD',
+      currency: 'INR',
       notifyDaysBefore: [7, 3, 1, 0],
       notifyOnStart: true,
       recurrence: 'annual',
@@ -66,7 +66,7 @@ export function createStarterReminders() {
       startDate: addDaysToDateString(today, 2),
       endDate: addDaysToDateString(today, 12),
       amount: 465,
-      currency: 'USD',
+      currency: 'INR',
       notifyDaysBefore: [3, 1, 0],
       notifyOnStart: true,
       recurrence: 'monthly',
@@ -84,7 +84,7 @@ export function createStarterReminders() {
       startDate: addDaysToDateString(today, -6),
       endDate: addDaysToDateString(today, 5),
       amount: 89.99,
-      currency: 'USD',
+      currency: 'INR',
       notifyDaysBefore: [3, 1, 0],
       notifyOnStart: false,
       recurrence: 'monthly',
@@ -102,7 +102,7 @@ export function createStarterReminders() {
       startDate: addDaysToDateString(today, 6),
       endDate: addDaysToDateString(today, 21),
       amount: 640,
-      currency: 'USD',
+      currency: 'INR',
       notifyDaysBefore: [7, 3, 1, 0],
       notifyOnStart: true,
       recurrence: 'annual',
@@ -208,9 +208,9 @@ export async function loadAppState() {
     DEFAULT_SETTINGS;
 
   return {
-    reminders: reminders ?? [],
+    reminders: (reminders ?? []).map((r) => ({ ...r, currency: 'INR' })),
     logs,
-    settings: { ...DEFAULT_SETTINGS, ...settings },
+    settings: { ...DEFAULT_SETTINGS, ...settings, defaultCurrency: 'INR' },
   };
 }
 

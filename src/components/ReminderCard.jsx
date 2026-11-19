@@ -1,16 +1,7 @@
 import React from 'react';
-import {
-  Bell,
-  CalendarPlus,
-  CheckCircle2,
-  Circle,
-  Download,
-  ExternalLink,
-  Pencil,
-  RefreshCw,
-  Trash2,
-} from 'lucide-react';
+import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { CATEGORY_LABELS, RECURRENCE_LABELS } from '../constants/reminder';
+import { COLORS, FONTS } from '../theme/tokens';
 import { buildGoogleCalendarUrl, downloadIcsFile } from '../utils/calendarExport';
 import {
   formatCurrency,
@@ -18,6 +9,7 @@ import {
   formatShortDate,
   getReminderWindowMetrics,
 } from '../utils/dateRange';
+import { BellIcon, CalendarIcon, GlyphIcon } from './RNIcons';
 
 export const ReminderCard = ({
   reminder,
@@ -31,202 +23,370 @@ export const ReminderCard = ({
   const amountLabel = formatCurrency(reminder.amount, reminder.currency);
   const googleCalUrl = buildGoogleCalendarUrl(reminder);
 
-  const statusTextColor =
+  const statusColor =
     metrics.status === 'completed'
-      ? 'text-emerald-700'
+      ? COLORS.emerald
       : metrics.status === 'overdue'
-        ? 'text-rose-700'
+        ? COLORS.rose
         : metrics.status === 'due_soon'
-          ? 'text-amber-700'
+          ? COLORS.amber
           : metrics.status === 'upcoming'
-            ? 'text-slate-600'
-            : 'text-teal-700';
+            ? COLORS.inkSecondary
+            : COLORS.teal;
 
-  const barFillColor =
-    metrics.status === 'completed'
-      ? 'bg-emerald-600'
-      : metrics.status === 'overdue'
-        ? 'bg-rose-600'
-        : metrics.status === 'due_soon'
-          ? 'bg-amber-600'
-          : 'bg-teal-700';
+  const handleOpenGoogleCalendar = () => {
+    Linking.openURL(googleCalUrl).catch(() => {});
+    onMarkCalendarSynced(reminder.id);
+  };
 
   return (
-    <article className="rounded-2xl border border-slate-200/90 bg-white p-4 transition-colors hover:border-slate-300 sm:p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500">
-            <span className="font-medium text-slate-700">
-              {CATEGORY_LABELS[reminder.category]}
-            </span>
-            <span aria-hidden="true">·</span>
-            <span>{reminder.provider}</span>
-            {reminder.accountRef && (
-              <>
-                <span aria-hidden="true">·</span>
-                <span className="font-mono-nums">{reminder.accountRef}</span>
-              </>
-            )}
-          </div>
-
-          <h3
-            className={`mt-1 text-base font-semibold tracking-tight sm:text-lg ${
-              reminder.completed ? 'text-slate-400 line-through' : 'text-slate-900'
-            }`}
-          >
+    <View style={styles.card}>
+      <View style={styles.topRow}>
+        <View style={styles.titleCol}>
+          <Text style={styles.metaLine}>
+            {CATEGORY_LABELS[reminder.category]} · {reminder.provider}
+            {reminder.accountRef ? ` · ${reminder.accountRef}` : ''}
+          </Text>
+          <Text style={[styles.title, reminder.completed && styles.titleCompleted]}>
             {reminder.title}
-          </h3>
-        </div>
+          </Text>
+        </View>
 
-        <div className="shrink-0 text-right">
-          {amountLabel && (
-            <p className="text-base font-bold text-slate-900 font-mono-nums sm:text-lg">
-              {amountLabel}
-            </p>
-          )}
-          <p className={`text-xs font-semibold font-mono-nums ${statusTextColor}`}>
+        <View style={styles.rightCol}>
+          {!!amountLabel && <Text style={styles.amount}>{amountLabel}</Text>}
+          <Text style={[styles.statusText, { color: statusColor }]}>
             {metrics.statusLabel}
-          </p>
-        </div>
-      </div>
+          </Text>
+        </View>
+      </View>
 
-      <div className="mt-4">
-        <div className="flex items-center justify-between text-xs text-slate-600">
-          <span className="font-mono-nums">
+      <View style={styles.windowSection}>
+        <View style={styles.dateRow}>
+          <Text style={styles.dateRangeText}>
             {formatShortDate(reminder.startDate)} — {formatFullDate(reminder.endDate)}
-          </span>
-          <span className="font-mono-nums text-slate-500">
-            {metrics.totalDays}d window
-          </span>
-        </div>
+          </Text>
+          <Text style={styles.spanText}>{metrics.totalDays}d window</Text>
+        </View>
 
-        <div
-          className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100"
-          role="progressbar"
-          aria-valuenow={metrics.progressPercent}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label={`Window progress: ${metrics.progressPercent}%`}
+        <View
+          style={styles.track}
+          accessibilityRole="progressbar"
+          accessibilityValue={{ min: 0, max: 100, now: metrics.progressPercent }}
         >
-          <div
-            className={`h-full rounded-full transition-all duration-300 ${barFillColor}`}
-            style={{ width: `${metrics.progressPercent}%` }}
+          <View
+            style={[
+              styles.fill,
+              {
+                width: `${metrics.progressPercent}%`,
+                backgroundColor: statusColor,
+              },
+            ]}
           />
-        </div>
+        </View>
 
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="inline-flex items-center gap-1">
-              <Bell className="h-3.5 w-3.5 text-slate-400" />
+        <View style={styles.infoFooter}>
+          <View style={styles.alertInfo}>
+            <BellIcon size={13} color={COLORS.inkMuted} />
+            <Text style={styles.infoText}>
               {reminder.notifyDaysBefore.length > 0
                 ? `Alerts: ${reminder.notifyDaysBefore
                     .map((d) => (d === 0 ? 'due day' : `${d}d prior`))
                     .join(', ')}`
-                : 'No lead alerts'}
-            </span>
-            <span aria-hidden="true">·</span>
-            <span>{RECURRENCE_LABELS[reminder.recurrence]}</span>
-          </div>
+                : 'No lead alerts'}{' '}
+              · {RECURRENCE_LABELS[reminder.recurrence]}
+            </Text>
+          </View>
 
-          {reminder.calendarSyncedAt && (
-            <span className="text-teal-700 font-medium">
+          {!!reminder.calendarSyncedAt && (
+            <Text style={styles.syncedText}>
               Exported {new Date(reminder.calendarSyncedAt).toLocaleDateString()}
-            </span>
+            </Text>
           )}
-        </div>
-      </div>
+        </View>
+      </View>
 
-      {reminder.notes && (
-        <p className="mt-3 text-sm leading-relaxed text-slate-600">{reminder.notes}</p>
-      )}
+      {!!reminder.notes && <Text style={styles.notes}>{reminder.notes}</Text>}
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => onToggleComplete(reminder.id)}
-            className={`inline-flex min-h-[40px] items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition whitespace-nowrap shrink-0 ${
-              reminder.completed
-                ? 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-                : 'bg-slate-900 text-white hover:bg-slate-800'
-            }`}
+      <View style={styles.actionRow}>
+        <View style={styles.leftActions}>
+          <Pressable
+            onPress={() => onToggleComplete(reminder.id)}
+            accessibilityRole="button"
+            style={[
+              styles.completeBtn,
+              reminder.completed ? styles.completeBtnDone : styles.completeBtnPending,
+            ]}
           >
-            {reminder.completed ? (
-              <>
-                <CheckCircle2 className="h-4 w-4" />
-                Completed
-              </>
-            ) : (
-              <>
-                <Circle className="h-4 w-4" />
-                Mark Paid / Done
-              </>
-            )}
-          </button>
+            <GlyphIcon
+              symbol={reminder.completed ? '✓' : '○'}
+              size={13}
+              color={reminder.completed ? COLORS.emerald : COLORS.white}
+            />
+            <Text
+              style={[
+                styles.completeText,
+                { color: reminder.completed ? COLORS.emerald : COLORS.white },
+              ]}
+            >
+              {reminder.completed ? 'Completed' : 'Mark Paid / Done'}
+            </Text>
+          </Pressable>
 
           {reminder.completed && reminder.recurrence !== 'none' && (
-            <button
-              type="button"
-              onClick={() => onAdvanceCycle(reminder.id)}
-              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-medium text-teal-800 transition hover:bg-teal-100 whitespace-nowrap shrink-0"
+            <Pressable
+              onPress={() => onAdvanceCycle(reminder.id)}
+              accessibilityRole="button"
+              style={styles.cycleBtn}
             >
-              <RefreshCw className="h-3.5 w-3.5" />
-              Next Cycle
-            </button>
+              <GlyphIcon symbol="↻" size={13} color={COLORS.tealDark} />
+              <Text style={styles.cycleText}>Next Cycle</Text>
+            </Pressable>
           )}
-        </div>
+        </View>
 
-        <div className="flex flex-wrap items-center gap-1">
-          <a
-            href={googleCalUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => onMarkCalendarSynced(reminder.id)}
-            className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 whitespace-nowrap shrink-0"
-            title="Open in Google Calendar"
+        <View style={styles.rightActions}>
+          <Pressable
+            onPress={handleOpenGoogleCalendar}
+            accessibilityRole="link"
+            style={styles.outlineBtn}
           >
-            <CalendarPlus className="h-3.5 w-3.5 text-teal-700" />
-            <span>Google Calendar</span>
-            <ExternalLink className="h-3 w-3 text-slate-400" />
-          </a>
+            <CalendarIcon size={13} color={COLORS.teal} />
+            <Text style={styles.outlineBtnText}>Google Calendar</Text>
+            <GlyphIcon symbol="↗" size={12} color={COLORS.inkMuted} />
+          </Pressable>
 
-          <button
-            type="button"
-            onClick={() => {
-              downloadIcsFile(
-                [reminder],
-                `${reminder.title.toLowerCase().replace(/\s+/g, '-')}.ics`
-              );
-              onMarkCalendarSynced(reminder.id);
-            }}
-            className="inline-flex min-h-[40px] items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 whitespace-nowrap shrink-0"
-            title="Download .ics calendar file"
-          >
-            <Download className="h-3.5 w-3.5 text-slate-500" />
-            <span>.ics</span>
-          </button>
+          {Platform.OS === 'web' && (
+            <Pressable
+              onPress={() => {
+                downloadIcsFile(
+                  [reminder],
+                  `${reminder.title.toLowerCase().replace(/\s+/g, '-')}.ics`
+                );
+                onMarkCalendarSynced(reminder.id);
+              }}
+              accessibilityRole="button"
+              style={styles.outlineBtn}
+            >
+              <GlyphIcon symbol="↓" size={12} color={COLORS.inkSecondary} />
+              <Text style={styles.outlineBtnText}>.ics</Text>
+            </Pressable>
+          )}
 
-          <button
-            type="button"
-            onClick={() => onEdit(reminder)}
-            className="flex min-h-[40px] min-w-[40px] items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
-            aria-label={`Edit ${reminder.title}`}
-            title="Edit reminder"
+          <Pressable
+            onPress={() => onEdit(reminder)}
+            accessibilityRole="button"
+            accessibilityLabel={`Edit ${reminder.title}`}
+            style={styles.iconBtn}
           >
-            <Pencil className="h-4 w-4" />
-          </button>
+            <GlyphIcon symbol="✎" size={14} color={COLORS.inkSecondary} />
+          </Pressable>
 
-          <button
-            type="button"
-            onClick={() => onDelete(reminder)}
-            className="flex min-h-[40px] min-w-[40px] items-center justify-center rounded-xl text-slate-500 transition hover:bg-rose-50 hover:text-rose-700"
-            aria-label={`Delete ${reminder.title}`}
-            title="Delete reminder"
+          <Pressable
+            onPress={() => onDelete(reminder)}
+            accessibilityRole="button"
+            accessibilityLabel={`Delete ${reminder.title}`}
+            style={styles.iconBtn}
           >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-    </article>
+            <GlyphIcon symbol="✕" size={14} color={COLORS.rose} />
+          </Pressable>
+        </View>
+      </View>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 16,
+  },
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  titleCol: {
+    flex: 1,
+  },
+  metaLine: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    color: COLORS.inkSecondary,
+  },
+  title: {
+    marginTop: 4,
+    fontFamily: FONTS.display,
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.inkPrimary,
+  },
+  titleCompleted: {
+    color: COLORS.inkMuted,
+    textDecorationLine: 'line-through',
+  },
+  rightCol: {
+    alignItems: 'flex-end',
+  },
+  amount: {
+    fontFamily: FONTS.mono,
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.inkPrimary,
+    fontVariant: ['tabular-nums'],
+  },
+  statusText: {
+    marginTop: 2,
+    fontFamily: FONTS.mono,
+    fontSize: 12,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
+  },
+  windowSection: {
+    marginTop: 14,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dateRangeText: {
+    fontFamily: FONTS.mono,
+    fontSize: 12,
+    color: COLORS.inkSecondary,
+    fontVariant: ['tabular-nums'],
+  },
+  spanText: {
+    fontFamily: FONTS.mono,
+    fontSize: 12,
+    color: COLORS.inkMuted,
+    fontVariant: ['tabular-nums'],
+  },
+  track: {
+    marginTop: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.surfaceMuted,
+    overflow: 'hidden',
+  },
+  fill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  infoFooter: {
+    marginTop: 8,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 6,
+  },
+  alertInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  infoText: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    color: COLORS.inkMuted,
+  },
+  syncedText: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.teal,
+  },
+  notes: {
+    marginTop: 10,
+    fontFamily: FONTS.sans,
+    fontSize: 13,
+    lineHeight: 19,
+    color: COLORS.inkSecondary,
+  },
+  actionRow: {
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.surfaceMuted,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+  },
+  leftActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  completeBtn: {
+    minHeight: 40,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  completeBtnPending: {
+    backgroundColor: COLORS.inkPrimary,
+  },
+  completeBtnDone: {
+    backgroundColor: COLORS.emeraldBg,
+  },
+  completeText: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  cycleBtn: {
+    minHeight: 40,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.tealBorder,
+    backgroundColor: COLORS.tealBg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  cycleText: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.tealDark,
+  },
+  rightActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 6,
+  },
+  outlineBtn: {
+    minHeight: 40,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  outlineBtnText: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.inkSecondary,
+  },
+  iconBtn: {
+    minWidth: 40,
+    minHeight: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

@@ -1,58 +1,82 @@
 import React from 'react';
+import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { COLORS, FONTS } from '../theme/tokens';
 import { getReminderWindowMetrics } from '../utils/dateRange';
 
 export const SummaryStrip = ({ reminders }) => {
-  const metricsList = reminders.map((r) => getReminderWindowMetrics(r));
+  const { width } = useWindowDimensions();
+  const isWide = width >= 640;
 
+  const metricsList = reminders.map((r) => getReminderWindowMetrics(r));
   const activeCount = metricsList.filter((m) => m.status === 'active').length;
   const dueSoonCount = metricsList.filter((m) => m.status === 'due_soon').length;
   const overdueCount = metricsList.filter((m) => m.status === 'overdue').length;
   const completedCount = metricsList.filter((m) => m.status === 'completed').length;
 
   const items = [
-    {
-      label: 'Active Windows',
-      value: activeCount,
-      sub: 'Open now',
-      accentClass: 'text-teal-700',
-    },
+    { label: 'Active Windows', value: activeCount, sub: 'Open now', color: COLORS.teal },
     {
       label: 'Due Within 3d',
       value: dueSoonCount,
       sub: 'Action needed',
-      accentClass: dueSoonCount > 0 ? 'text-amber-700' : 'text-slate-900',
+      color: dueSoonCount > 0 ? COLORS.amber : COLORS.inkPrimary,
     },
     {
       label: 'Overdue',
       value: overdueCount,
       sub: 'Past end date',
-      accentClass: overdueCount > 0 ? 'text-rose-700' : 'text-slate-900',
+      color: overdueCount > 0 ? COLORS.rose : COLORS.inkPrimary,
     },
-    {
-      label: 'Completed',
-      value: completedCount,
-      sub: 'Settled items',
-      accentClass: 'text-emerald-700',
-    },
+    { label: 'Completed', value: completedCount, sub: 'Settled items', color: COLORS.emerald },
   ];
 
   return (
-    <section
-      aria-label="Reminder summary"
-      className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4"
-    >
+    <View style={styles.grid}>
       {items.map((item) => (
-        <div
+        <View
           key={item.label}
-          className="rounded-2xl border border-slate-200/90 bg-white p-4"
+          style={[styles.card, { width: isWide ? '23.6%' : '48.2%' }]}
         >
-          <p className="text-xs font-medium text-slate-500">{item.label}</p>
-          <p className={`mt-1 text-2xl font-bold font-mono-nums ${item.accentClass}`}>
-            {item.value}
-          </p>
-          <p className="mt-0.5 text-xs text-slate-500">{item.sub}</p>
-        </div>
+          <Text style={styles.label}>{item.label}</Text>
+          <Text style={[styles.value, { color: item.color }]}>{item.value}</Text>
+          <Text style={styles.sub}>{item.sub}</Text>
+        </View>
       ))}
-    </section>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  card: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 16,
+  },
+  label: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.inkMuted,
+  },
+  value: {
+    marginTop: 4,
+    fontFamily: FONTS.mono,
+    fontSize: 24,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  sub: {
+    marginTop: 2,
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    color: COLORS.inkMuted,
+  },
+});

@@ -1,17 +1,29 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { BellRing, CalendarRange, Plus } from 'lucide-react';
+import {
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { BottomNav } from './components/BottomNav';
 import { ConfirmModal } from './components/ConfirmModal';
 import { DateRangeFilterBar } from './components/DateRangeFilterBar';
 import { DateRangeTimeline } from './components/DateRangeTimeline';
+import { ListSearchAndCategoryBar } from './components/ListSearchAndCategoryBar';
 import { NotificationCenter } from './components/NotificationCenter';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { PWAInstallButton } from './components/PWAInstallButton';
 import { ReminderCard } from './components/ReminderCard';
 import { ReminderFormModal } from './components/ReminderFormModal';
+import { BellIcon, CalendarIcon, PlusIcon } from './components/RNIcons';
 import { SettingsView } from './components/SettingsView';
 import { SummaryStrip } from './components/SummaryStrip';
 import { TopBar } from './components/TopBar';
+import { CATEGORY_LABELS } from './constants/reminder';
+import { COLORS, FONTS } from './theme/tokens';
 import {
   addDaysToDateString,
   advanceDateByRecurrence,
@@ -35,6 +47,10 @@ import {
 } from './utils/storage';
 
 export default function App() {
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 1024;
+  const isTabletOrUp = width >= 768;
+
   const [loaded, setLoaded] = useState(false);
   const [reminders, setReminders] = useState([]);
   const [logs, setLogs] = useState([]);
@@ -69,7 +85,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!toastMessage) return;
+    if (!toastMessage) return undefined;
     const t = setTimeout(() => setToastMessage(null), 3500);
     return () => clearTimeout(t);
   }, [toastMessage]);
@@ -130,7 +146,7 @@ export default function App() {
   );
 
   useEffect(() => {
-    if (!loaded || !settings.autoCheckOnLaunch) return;
+    if (!loaded || !settings.autoCheckOnLaunch) return undefined;
     if (permission === 'granted' && settings.pushEnabled) {
       void runWindowNotificationCheck(true);
     }
@@ -279,7 +295,8 @@ export default function App() {
           q &&
           !r.title.toLowerCase().includes(q) &&
           !r.provider.toLowerCase().includes(q) &&
-          !(r.accountRef || '').toLowerCase().includes(q)
+          !(r.accountRef || '').toLowerCase().includes(q) &&
+          !(CATEGORY_LABELS[r.category] || '').toLowerCase().includes(q)
         ) {
           return false;
         }
@@ -312,6 +329,30 @@ export default function App() {
     customEnd,
   ]);
 
+  const { categoryCounts, visibleBaseCount } = useMemo(() => {
+    const counts = {};
+    let total = 0;
+    const q = searchQuery.trim().toLowerCase();
+    for (const r of reminders) {
+      if (!showCompleted && r.completed) continue;
+      if (
+        q &&
+        !r.title.toLowerCase().includes(q) &&
+        !r.provider.toLowerCase().includes(q) &&
+        !(r.accountRef || '').toLowerCase().includes(q) &&
+        !(CATEGORY_LABELS[r.category] || '').toLowerCase().includes(q)
+      ) {
+        continue;
+      }
+      total += 1;
+      counts[r.category] = (counts[r.category] || 0) + 1;
+    }
+    return { categoryCounts: counts, visibleBaseCount: total };
+  }, [reminders, showCompleted, searchQuery]);
+
+  const hasActiveFilters =
+    searchQuery.trim().length > 0 || category !== 'all' || preset !== 'all';
+
   const urgentCount = useMemo(() => {
     return reminders.filter((r) => {
       if (r.completed) return false;
@@ -321,7 +362,7 @@ export default function App() {
   }, [reminders]);
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24 text-slate-900 md:pb-12">
+    <SafeAreaView style={styles.safeRoot}>
       <TopBar
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -331,98 +372,107 @@ export default function App() {
         }}
       />
 
-      <main className="mx-auto max-w-7xl px-4 pt-5 sm:px-6 lg:px-8 lg:pt-8">
-        <div className="grid gap-6 lg:grid-cols-12 lg:items-start">
-          <aside className="hidden space-y-4 lg:col-span-3 lg:block">
-            <div className="rounded-2xl border border-slate-200/90 bg-white p-5">
-              <h1 className="text-xl font-bold tracking-tight text-slate-900 font-display text-balance">
-                Bank & Service Windows
-              </h1>
-              <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
-                Track statement windows, deposit maturities, EMI schedules, and service renewals across custom date ranges.
-              </p>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[
+          styles.scrollContent,
+          !isTabletOrUp && styles.scrollContentMobile,
+        ]}
+      >
+        <View style={[styles.workspace, isDesktop && styles.workspaceDesktop]}>
+          {isDesktop && (
+            <View style={styles.sidebar}>
+              <View style={styles.sideCard}>
+                <Text style={styles.sideHeading}>Bank & Service Windows</Text>
+                <Text style={styles.sideBody}>
+                  Track statement windows, deposit maturities, EMI schedules, and service renewals across custom date ranges.
+                </Text>
+                <View style={styles.sideAction}>
+                  <PWAInstallButton variant="card" />
+                </View>
+              </View>
 
-              <div className="mt-4 flex flex-col gap-2">
-                <PWAInstallButton variant="card" />
-              </div>
-            </div>
+              <View style={styles.sideCard}>
+                <View style={styles.sideTitleRow}>
+                  <BellIcon size={15} color={COLORS.teal} />
+                  <Text style={styles.sideTitle}>Push Alerts</Text>
+                </View>
+                <Text style={styles.sideSmall}>
+                  {permission === 'granted'
+                    ? 'Device notifications are active for approaching end dates.'
+                    : 'Allow push notifications to receive alerts before windows close.'}
+                </Text>
+                {permission !== 'granted' && permission !== 'unsupported' ? (
+                  <Pressable
+                    onPress={handleRequestPermission}
+                    style={styles.sideDarkBtn}
+                  >
+                    <Text style={styles.sideDarkBtnText}>Enable Device Alerts</Text>
+                  </Pressable>
+                ) : (
+                  <Pressable
+                    onPress={() => setActiveTab('alerts')}
+                    style={styles.sideOutlineBtn}
+                  >
+                    <Text style={styles.sideOutlineBtnText}>Manage Alert Rules</Text>
+                  </Pressable>
+                )}
+              </View>
 
-            <div className="rounded-2xl border border-slate-200/90 bg-white p-5">
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                <BellRing className="h-4 w-4 text-teal-700" />
-                <span>Push Alerts</span>
-              </div>
-              <p className="mt-1 text-xs leading-relaxed text-slate-600">
-                {permission === 'granted'
-                  ? 'Device notifications are active for approaching end dates.'
-                  : 'Allow push notifications to receive alerts before windows close.'}
-              </p>
-              {permission !== 'granted' && permission !== 'unsupported' ? (
-                <button
-                  type="button"
-                  onClick={handleRequestPermission}
-                  className="mt-3 min-h-[40px] w-full rounded-xl bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-800"
-                >
-                  Enable Device Alerts
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('alerts')}
-                  className="mt-3 min-h-[40px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                >
-                  Manage Alert Rules
-                </button>
-              )}
-            </div>
+              <View style={styles.sideCard}>
+                <View style={styles.sideTitleRow}>
+                  <CalendarIcon size={15} color={COLORS.teal} />
+                  <Text style={styles.sideTitle}>Google Calendar Sync</Text>
+                </View>
+                <Text style={styles.sideSmall}>
+                  Use Google Calendar or .ics export on any reminder, or export an entire date range from the Date Range tab.
+                </Text>
+              </View>
+            </View>
+          )}
 
-            <div className="rounded-2xl border border-slate-200/90 bg-white p-5">
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                <CalendarRange className="h-4 w-4 text-teal-700" />
-                <span>Google Calendar Sync</span>
-              </div>
-              <p className="mt-1 text-xs leading-relaxed text-slate-600">
-                Use the Google Calendar or .ics button on any reminder, or batch-export an entire date range from the Date Range tab.
-              </p>
-            </div>
-          </aside>
-
-          <div className="space-y-5 lg:col-span-9">
+          <View style={styles.mainCol}>
             {activeTab === 'reminders' && (
-              <>
-                <div className="flex items-center justify-between lg:hidden">
-                  <div>
-                    <h1 className="text-xl font-bold tracking-tight text-slate-900 font-display">
-                      Bank & Service Windows
-                    </h1>
-                    <p className="text-xs text-slate-600">
+              <View style={styles.sectionStack}>
+                {!isDesktop && (
+                  <View>
+                    <Text style={styles.mobileHeading}>Bank & Service Windows</Text>
+                    <Text style={styles.mobileSub}>
                       Date-range reminders with push alerts & calendar export
-                    </p>
-                  </div>
-                </div>
+                    </Text>
+                  </View>
+                )}
 
                 {permission === 'default' && (
-                  <div className="flex flex-col gap-3 rounded-2xl border border-teal-200 bg-teal-50/70 p-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-start gap-3">
-                      <BellRing className="mt-0.5 h-5 w-5 shrink-0 text-teal-700" />
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">
+                  <View style={styles.permBanner}>
+                    <View style={styles.permInfo}>
+                      <BellIcon size={18} color={COLORS.teal} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.permTitle}>
                           Enable push notifications on this device
-                        </p>
-                        <p className="text-xs text-slate-600">
+                        </Text>
+                        <Text style={styles.permSub}>
                           Get notified when bank payment windows open or approach their due date.
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleRequestPermission}
-                      className="min-h-[42px] rounded-xl bg-teal-700 px-4 py-2 text-xs font-medium text-white hover:bg-teal-800 whitespace-nowrap shrink-0"
+                        </Text>
+                      </View>
+                    </View>
+                    <Pressable
+                      onPress={handleRequestPermission}
+                      style={styles.permBtn}
                     >
-                      Enable Notifications
-                    </button>
-                  </div>
+                      <Text style={styles.permBtnText}>Enable Notifications</Text>
+                    </Pressable>
+                  </View>
                 )}
+
+                <ListSearchAndCategoryBar
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  category={category}
+                  onCategoryChange={setCategory}
+                  categoryCounts={categoryCounts}
+                  totalCount={visibleBaseCount}
+                />
 
                 <SummaryStrip reminders={reminders} />
 
@@ -433,40 +483,55 @@ export default function App() {
                   customEnd={customEnd}
                   onCustomStartChange={setCustomStart}
                   onCustomEndChange={setCustomEnd}
-                  category={category}
-                  onCategoryChange={setCategory}
-                  searchQuery={searchQuery}
-                  onSearchChange={setSearchQuery}
                   showCompleted={showCompleted}
                   onToggleShowCompleted={() => setShowCompleted((s) => !s)}
                 />
 
+                {hasActiveFilters && (
+                  <View style={styles.filterStatusRow}>
+                    <Text style={styles.filterStatusText}>
+                      Showing {filteredReminders.length} of {visibleBaseCount}{' '}
+                      matching reminder{visibleBaseCount === 1 ? '' : 's'}
+                    </Text>
+                    <Pressable
+                      onPress={() => {
+                        setSearchQuery('');
+                        setCategory('all');
+                        setPreset('all');
+                      }}
+                      accessibilityRole="button"
+                      style={styles.resetFilterBtn}
+                    >
+                      <Text style={styles.resetFilterText}>Reset filters</Text>
+                    </Pressable>
+                  </View>
+                )}
+
                 {!loaded ? (
-                  <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
-                    Loading local reminders...
-                  </div>
+                  <View style={styles.emptyCard}>
+                    <Text style={styles.emptySub}>Loading local reminders...</Text>
+                  </View>
                 ) : filteredReminders.length === 0 ? (
-                  <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center">
-                    <p className="text-base font-semibold text-slate-900">
+                  <View style={styles.emptyCard}>
+                    <Text style={styles.emptyTitle}>
                       No reminders match this date range or filter
-                    </p>
-                    <p className="mt-1 text-sm text-slate-600">
+                    </Text>
+                    <Text style={styles.emptySub}>
                       Adjust your date window filters or add a new personal bank or service reminder.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
+                    </Text>
+                    <Pressable
+                      onPress={() => {
                         setEditingReminder(null);
                         setFormOpen(true);
                       }}
-                      className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800"
+                      style={styles.emptyBtn}
                     >
-                      <Plus className="h-4 w-4" />
-                      Add Reminder
-                    </button>
-                  </div>
+                      <PlusIcon size={15} color={COLORS.white} />
+                      <Text style={styles.emptyBtnText}>Add Reminder</Text>
+                    </Pressable>
+                  </View>
                 ) : (
-                  <div className="space-y-3">
+                  <View style={styles.cardsList}>
                     {filteredReminders.map((reminder) => (
                       <ReminderCard
                         key={reminder.id}
@@ -481,9 +546,9 @@ export default function App() {
                         onMarkCalendarSynced={handleMarkCalendarSynced}
                       />
                     ))}
-                  </div>
+                  </View>
                 )}
-              </>
+              </View>
             )}
 
             {activeTab === 'timeline' && (
@@ -553,21 +618,23 @@ export default function App() {
                 }}
               />
             )}
-          </div>
-        </div>
-      </main>
+          </View>
+        </View>
+      </ScrollView>
 
-      <button
-        type="button"
-        onClick={() => {
-          setEditingReminder(null);
-          setFormOpen(true);
-        }}
-        aria-label="New reminder"
-        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-700 text-white shadow-lg shadow-teal-900/20 transition active:scale-95 md:hidden"
-      >
-        <Plus className="h-6 w-6" />
-      </button>
+      {!isTabletOrUp && (
+        <Pressable
+          onPress={() => {
+            setEditingReminder(null);
+            setFormOpen(true);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="New reminder"
+          style={styles.fab}
+        >
+          <PlusIcon size={22} color={COLORS.white} />
+        </Pressable>
+      )}
 
       <BottomNav
         activeTab={activeTab}
@@ -597,16 +664,267 @@ export default function App() {
         onCancel={() => setConfirmState((prev) => ({ ...prev, open: false }))}
       />
 
-      {toastMessage && (
-        <div
-          role="status"
-          className="fixed bottom-20 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-medium text-white shadow-lg md:bottom-6"
-        >
-          {toastMessage}
-        </div>
+      {!!toastMessage && (
+        <View style={styles.toast}>
+          <Text style={styles.toastText}>{toastMessage}</Text>
+        </View>
       )}
 
       <OfflineIndicator />
-    </div>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safeRoot: {
+    flex: 1,
+    minHeight: '100%',
+    backgroundColor: COLORS.bgCanvas,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    width: '100%',
+    maxWidth: 1240,
+    alignSelf: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 48,
+  },
+  scrollContentMobile: {
+    paddingBottom: 96,
+  },
+  workspace: {
+    gap: 20,
+  },
+  workspaceDesktop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  sidebar: {
+    width: 280,
+    gap: 14,
+  },
+  sideCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 18,
+    gap: 8,
+  },
+  sideHeading: {
+    fontFamily: FONTS.display,
+    fontSize: 19,
+    fontWeight: '800',
+    color: COLORS.inkPrimary,
+  },
+  sideBody: {
+    fontFamily: FONTS.sans,
+    fontSize: 13,
+    lineHeight: 19,
+    color: COLORS.inkSecondary,
+  },
+  sideAction: {
+    marginTop: 6,
+  },
+  sideTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sideTitle: {
+    fontFamily: FONTS.sans,
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.inkPrimary,
+  },
+  sideSmall: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    lineHeight: 18,
+    color: COLORS.inkSecondary,
+  },
+  sideDarkBtn: {
+    marginTop: 6,
+    minHeight: 40,
+    borderRadius: 10,
+    backgroundColor: COLORS.inkPrimary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sideDarkBtnText: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.white,
+  },
+  sideOutlineBtn: {
+    marginTop: 6,
+    minHeight: 40,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sideOutlineBtnText: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.inkSecondary,
+  },
+  mainCol: {
+    flex: 1,
+  },
+  sectionStack: {
+    gap: 16,
+  },
+  mobileHeading: {
+    fontFamily: FONTS.display,
+    fontSize: 20,
+    fontWeight: '800',
+    color: COLORS.inkPrimary,
+  },
+  mobileSub: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    color: COLORS.inkSecondary,
+  },
+  permBanner: {
+    backgroundColor: COLORS.tealBg,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.tealBorder,
+    padding: 14,
+    gap: 12,
+  },
+  permInfo: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  permTitle: {
+    fontFamily: FONTS.sans,
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.inkPrimary,
+  },
+  permSub: {
+    marginTop: 2,
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    color: COLORS.inkSecondary,
+  },
+  permBtn: {
+    minHeight: 42,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: COLORS.teal,
+    alignSelf: 'flex-start',
+    justifyContent: 'center',
+  },
+  permBtnText: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.white,
+  },
+  emptyCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 32,
+    alignItems: 'center',
+    gap: 8,
+  },
+  emptyTitle: {
+    fontFamily: FONTS.display,
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.inkPrimary,
+    textAlign: 'center',
+  },
+  emptySub: {
+    fontFamily: FONTS.sans,
+    fontSize: 13,
+    color: COLORS.inkSecondary,
+    textAlign: 'center',
+  },
+  emptyBtn: {
+    marginTop: 8,
+    minHeight: 44,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: COLORS.teal,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  emptyBtnText: {
+    fontFamily: FONTS.sans,
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.white,
+  },
+  filterStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+  },
+  filterStatusText: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.inkSecondary,
+  },
+  resetFilterBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: COLORS.surfaceMuted,
+  },
+  resetFilterText: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.tealDark,
+  },
+  cardsList: {
+    gap: 12,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 80,
+    right: 16,
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    backgroundColor: COLORS.teal,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  toast: {
+    position: 'absolute',
+    bottom: 80,
+    alignSelf: 'center',
+    backgroundColor: COLORS.inkPrimary,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  toastText: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.white,
+  },
+});

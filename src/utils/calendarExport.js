@@ -129,6 +129,7 @@ export function generateIcsContent(reminders) {
 }
 
 export function downloadIcsFile(reminders, filename) {
+  if (typeof document === 'undefined' || typeof URL === 'undefined') return;
   const content = generateIcsContent(reminders);
   const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });
   const url = URL.createObjectURL(blob);

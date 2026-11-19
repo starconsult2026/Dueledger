@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { CalendarPlus, Download, ExternalLink } from 'lucide-react';
+import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { CATEGORY_LABELS } from '../constants/reminder';
+import { COLORS, FONTS } from '../theme/tokens';
 import { buildGoogleCalendarUrl, downloadIcsFile } from '../utils/calendarExport';
 import {
   addDaysToDateString,
@@ -12,6 +13,8 @@ import {
   overlapsDateRange,
   toLocalDateString,
 } from '../utils/dateRange';
+import { DateField } from './DateField';
+import { CalendarIcon, GlyphIcon } from './RNIcons';
 
 export const DateRangeTimeline = ({
   reminders,
@@ -46,122 +49,115 @@ export const DateRangeTimeline = ({
   };
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-2xl border border-slate-200/90 bg-white p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900 font-display">
-              Date Range Window Timeline
-            </h2>
-            <p className="mt-1 text-sm text-slate-600">
+    <View style={styles.container}>
+      <View style={styles.card}>
+        <View style={styles.headerRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Date Range Window Timeline</Text>
+            <Text style={styles.subtitle}>
               Inspect overlapping bank and service periods across any date range and export them to Google Calendar.
-            </p>
-          </div>
+            </Text>
+          </View>
 
-          <button
-            type="button"
-            disabled={matchingReminders.length === 0}
-            onClick={handleExportRange}
-            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-50 whitespace-nowrap shrink-0"
-          >
-            <Download className="h-4 w-4" />
-            Export Range to Calendar (.ics)
-          </button>
-        </div>
+          {Platform.OS === 'web' && (
+            <Pressable
+              disabled={matchingReminders.length === 0}
+              onPress={handleExportRange}
+              style={[
+                styles.exportBtn,
+                matchingReminders.length === 0 && styles.disabledBtn,
+              ]}
+            >
+              <GlyphIcon symbol="↓" size={14} color={COLORS.white} />
+              <Text style={styles.exportBtnText}>Export Range (.ics)</Text>
+            </Pressable>
+          )}
+        </View>
 
-        <div className="mt-4 grid grid-cols-1 gap-3 border-t border-slate-100 pt-4 sm:grid-cols-3 sm:items-end">
-          <div>
-            <label className="block text-xs font-medium text-slate-600">
-              Range Start Date
-            </label>
-            <input
-              type="date"
+        <View style={styles.controlsGrid}>
+          <View style={styles.dateCol}>
+            <Text style={styles.label}>Range Start Date</Text>
+            <DateField
               value={rangeStart}
-              onChange={(e) => {
-                const v = e.target.value;
+              onChange={(v) => {
                 setRangeStart(v);
                 if (v > rangeEnd) setRangeEnd(v);
               }}
-              className="mt-1 min-h-[44px] w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 font-mono-nums focus:border-teal-600 focus:bg-white focus:outline-none"
+              accessibilityLabel="Timeline range start date"
             />
-          </div>
+          </View>
 
-          <div>
-            <label className="block text-xs font-medium text-slate-600">
-              Range End Date
-            </label>
-            <input
-              type="date"
+          <View style={styles.dateCol}>
+            <Text style={styles.label}>Range End Date</Text>
+            <DateField
               value={rangeEnd}
               min={rangeStart}
-              onChange={(e) => setRangeEnd(e.target.value)}
-              className="mt-1 min-h-[44px] w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 font-mono-nums focus:border-teal-600 focus:bg-white focus:outline-none"
+              onChange={setRangeEnd}
+              accessibilityLabel="Timeline range end date"
             />
-          </div>
+          </View>
+        </View>
 
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setRangeStart(addDaysToDateString(today, -7));
-                setRangeEnd(addDaysToDateString(today, 23));
-              }}
-              className="min-h-[44px] rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-medium text-slate-700 hover:bg-slate-50 whitespace-nowrap"
-            >
-              30-Day View
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const d = new Date();
-                const first = new Date(d.getFullYear(), d.getMonth(), 1);
-                const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-                setRangeStart(toLocalDateString(first));
-                setRangeEnd(toLocalDateString(last));
-              }}
-              className="min-h-[44px] rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-medium text-slate-700 hover:bg-slate-50 whitespace-nowrap"
-            >
-              Current Month
-            </button>
-          </div>
-        </div>
-      </div>
+        <View style={styles.presetRow}>
+          <Pressable
+            onPress={() => {
+              setRangeStart(addDaysToDateString(today, -7));
+              setRangeEnd(addDaysToDateString(today, 23));
+            }}
+            style={styles.presetBtn}
+          >
+            <Text style={styles.presetText}>30-Day View</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              const d = new Date();
+              const first = new Date(d.getFullYear(), d.getMonth(), 1);
+              const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+              setRangeStart(toLocalDateString(first));
+              setRangeEnd(toLocalDateString(last));
+            }}
+            style={styles.presetBtn}
+          >
+            <Text style={styles.presetText}>Current Month</Text>
+          </Pressable>
+        </View>
+      </View>
 
-      <div className="rounded-2xl border border-slate-200/90 bg-white p-5">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3 text-xs text-slate-500 font-mono-nums">
-          <span>{formatFullDate(rangeStart)}</span>
-          <span>
-            {matchingReminders.length} {matchingReminders.length === 1 ? 'window' : 'windows'} in range ({totalRangeDays}d)
-          </span>
-          <span>{formatFullDate(rangeEnd)}</span>
-        </div>
+      <View style={styles.card}>
+        <View style={styles.rangeMetaRow}>
+          <Text style={styles.rangeMetaText}>{formatFullDate(rangeStart)}</Text>
+          <Text style={styles.rangeMetaText}>
+            {matchingReminders.length}{' '}
+            {matchingReminders.length === 1 ? 'window' : 'windows'} ({totalRangeDays}d)
+          </Text>
+          <Text style={styles.rangeMetaText}>{formatFullDate(rangeEnd)}</Text>
+        </View>
 
         {matchingReminders.length === 0 ? (
-          <div className="py-12 text-center">
-            <p className="text-sm font-medium text-slate-700">
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyTitle}>
               No bank or service windows overlap this date range.
-            </p>
-            <p className="mt-1 text-xs text-slate-500">
+            </Text>
+            <Text style={styles.emptySub}>
               Widen the start or end date above to view upcoming schedules.
-            </p>
-          </div>
+            </Text>
+          </View>
         ) : (
-          <div className="relative mt-4 space-y-4">
+          <View style={styles.barsWrap}>
             {todayOffsetPct !== null && (
-              <div
-                className="pointer-events-none absolute bottom-0 top-0 z-10 w-px bg-rose-500/70"
-                style={{ left: `${todayOffsetPct}%` }}
-              >
-                <span className="-translate-x-1/2 rounded bg-rose-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                  Today
-                </span>
-              </div>
+              <View style={[styles.todayLine, { left: `${todayOffsetPct}%` }]}>
+                <View style={styles.todayPill}>
+                  <Text style={styles.todayText}>Today</Text>
+                </View>
+              </View>
             )}
 
             {matchingReminders.map((reminder) => {
               const metrics = getReminderWindowMetrics(reminder);
-              const clampedStart = reminder.startDate < rangeStart ? rangeStart : reminder.startDate;
-              const clampedEnd = reminder.endDate > rangeEnd ? rangeEnd : reminder.endDate;
+              const clampedStart =
+                reminder.startDate < rangeStart ? rangeStart : reminder.startDate;
+              const clampedEnd =
+                reminder.endDate > rangeEnd ? rangeEnd : reminder.endDate;
               const leftPct = Math.max(
                 0,
                 (diffCalendarDays(rangeStart, clampedStart) / totalRangeDays) * 100
@@ -173,72 +169,271 @@ export const DateRangeTimeline = ({
 
               const barColor =
                 metrics.status === 'completed'
-                  ? 'bg-emerald-600'
+                  ? COLORS.emerald
                   : metrics.status === 'overdue'
-                    ? 'bg-rose-600'
+                    ? COLORS.rose
                     : metrics.status === 'due_soon'
-                      ? 'bg-amber-600'
-                      : 'bg-teal-700';
+                      ? COLORS.amber
+                      : COLORS.teal;
 
               const amount = formatCurrency(reminder.amount, reminder.currency);
 
               return (
-                <div
-                  key={reminder.id}
-                  className="rounded-xl border border-slate-100 bg-slate-50/50 p-3.5"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <button
-                      type="button"
-                      onClick={() => onEdit(reminder)}
-                      className="text-left hover:underline"
-                    >
-                      <span className="text-sm font-semibold text-slate-900">
-                        {reminder.title}
-                      </span>
-                      <span className="ml-2 text-xs text-slate-500">
+                <View key={reminder.id} style={styles.itemCard}>
+                  <View style={styles.itemHeader}>
+                    <Pressable onPress={() => onEdit(reminder)} style={{ flex: 1 }}>
+                      <Text style={styles.itemTitle}>{reminder.title}</Text>
+                      <Text style={styles.itemSub}>
                         {CATEGORY_LABELS[reminder.category]} · {reminder.provider}
-                      </span>
-                    </button>
+                      </Text>
+                    </Pressable>
 
-                    <div className="flex items-center gap-3 text-xs">
-                      {amount && (
-                        <span className="font-semibold text-slate-800 font-mono-nums">
-                          {amount}
-                        </span>
-                      )}
-                      <span className="font-medium text-slate-600 font-mono-nums">
-                        {formatShortDate(reminder.startDate)} – {formatShortDate(reminder.endDate)}
-                      </span>
-                      <a
-                        href={buildGoogleCalendarUrl(reminder)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => onMarkCalendarSynced(reminder.id)}
-                        className="inline-flex items-center gap-1 font-medium text-teal-700 hover:text-teal-900"
+                    <View style={styles.itemRight}>
+                      {!!amount && <Text style={styles.itemAmount}>{amount}</Text>}
+                      <Text style={styles.itemDates}>
+                        {formatShortDate(reminder.startDate)} –{' '}
+                        {formatShortDate(reminder.endDate)}
+                      </Text>
+                      <Pressable
+                        onPress={() => {
+                          Linking.openURL(buildGoogleCalendarUrl(reminder)).catch(() => {});
+                          onMarkCalendarSynced(reminder.id);
+                        }}
+                        style={styles.addCalBtn}
                       >
-                        <CalendarPlus className="h-3.5 w-3.5" />
-                        <span>Add</span>
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    </div>
-                  </div>
+                        <CalendarIcon size={12} color={COLORS.teal} />
+                        <Text style={styles.addCalText}>Add ↗</Text>
+                      </Pressable>
+                    </View>
+                  </View>
 
-                  <div className="relative mt-2.5 h-3 w-full overflow-hidden rounded-full bg-slate-200/70">
-                    <div
-                      className={`absolute top-0 h-full rounded-full ${barColor}`}
-                      style={{
-                        left: `${leftPct}%`,
-                        width: `${Math.min(100 - leftPct, widthPct)}%`,
-                      }}
+                  <View style={styles.track}>
+                    <View
+                      style={[
+                        styles.bar,
+                        {
+                          left: `${leftPct}%`,
+                          width: `${Math.min(100 - leftPct, widthPct)}%`,
+                          backgroundColor: barColor,
+                        },
+                      ]}
                     />
-                  </div>
-                </div>
+                  </View>
+                </View>
               );
             })}
-          </div>
+          </View>
         )}
-      </div>
-    </div>
+      </View>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    gap: 16,
+  },
+  card: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 18,
+    gap: 14,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+  },
+  title: {
+    fontFamily: FONTS.display,
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.inkPrimary,
+  },
+  subtitle: {
+    marginTop: 4,
+    fontFamily: FONTS.sans,
+    fontSize: 13,
+    lineHeight: 19,
+    color: COLORS.inkSecondary,
+  },
+  exportBtn: {
+    minHeight: 44,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: COLORS.teal,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  disabledBtn: {
+    opacity: 0.5,
+  },
+  exportBtnText: {
+    fontFamily: FONTS.sans,
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.white,
+  },
+  controlsGrid: {
+    flexDirection: 'row',
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.surfaceMuted,
+    paddingTop: 14,
+  },
+  dateCol: {
+    flex: 1,
+    gap: 4,
+  },
+  label: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.inkSecondary,
+  },
+  presetRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  presetBtn: {
+    minHeight: 40,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surface,
+    justifyContent: 'center',
+  },
+  presetText: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.inkSecondary,
+  },
+  rangeMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.surfaceMuted,
+    paddingBottom: 10,
+  },
+  rangeMetaText: {
+    fontFamily: FONTS.mono,
+    fontSize: 12,
+    color: COLORS.inkMuted,
+  },
+  emptyBox: {
+    paddingVertical: 36,
+    alignItems: 'center',
+  },
+  emptyTitle: {
+    fontFamily: FONTS.sans,
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.inkSecondary,
+  },
+  emptySub: {
+    marginTop: 4,
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    color: COLORS.inkMuted,
+  },
+  barsWrap: {
+    position: 'relative',
+    gap: 12,
+    paddingTop: 16,
+  },
+  todayLine: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 1.5,
+    backgroundColor: COLORS.rose,
+    zIndex: 10,
+  },
+  todayPill: {
+    backgroundColor: COLORS.rose,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+    marginLeft: -18,
+  },
+  todayText: {
+    fontFamily: FONTS.sans,
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.white,
+  },
+  itemCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.surfaceMuted,
+    backgroundColor: COLORS.bgCanvas,
+    padding: 12,
+    gap: 10,
+  },
+  itemHeader: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+  },
+  itemTitle: {
+    fontFamily: FONTS.sans,
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.inkPrimary,
+  },
+  itemSub: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    color: COLORS.inkMuted,
+  },
+  itemRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  itemAmount: {
+    fontFamily: FONTS.mono,
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.inkPrimary,
+  },
+  itemDates: {
+    fontFamily: FONTS.mono,
+    fontSize: 12,
+    color: COLORS.inkSecondary,
+  },
+  addCalBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  addCalText: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.teal,
+  },
+  track: {
+    position: 'relative',
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: COLORS.border,
+    overflow: 'hidden',
+  },
+  bar: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    borderRadius: 5,
+  },
+});

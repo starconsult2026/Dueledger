@@ -1,6 +1,8 @@
 import React from 'react';
-import { Plus } from 'lucide-react';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { COLORS, FONTS } from '../theme/tokens';
 import { PWAInstallButton } from './PWAInstallButton';
+import { PlusIcon } from './RNIcons';
 
 const NAV_ITEMS = [
   { id: 'reminders', label: 'Reminders' },
@@ -10,54 +12,129 @@ const NAV_ITEMS = [
 ];
 
 export const TopBar = ({ activeTab, onTabChange, onCreateNew }) => {
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
+
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur-md pt-safe">
-      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-8 px-4 sm:px-6 lg:h-16 lg:px-8">
-        <button
-          type="button"
-          onClick={() => onTabChange('reminders')}
-          className="text-left text-lg font-bold tracking-tight text-slate-900 whitespace-nowrap shrink-0 font-display"
+    <View style={styles.header}>
+      <View style={styles.inner}>
+        <Pressable
+          onPress={() => onTabChange('reminders')}
+          accessibilityRole="button"
+          style={styles.brandBtn}
         >
-          DueLedger
-        </button>
+          <Text style={styles.brandText}>DueLedger</Text>
+        </Pressable>
 
-        <nav
-          className="hidden md:flex items-center gap-6 text-sm font-medium"
-          aria-label="Primary navigation"
-        >
-          {NAV_ITEMS.map((item) => {
-            const active = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => onTabChange(item.id)}
-                className={`min-h-[44px] border-b-2 px-1 transition-colors whitespace-nowrap shrink-0 ${
-                  active
-                    ? 'border-teal-700 text-slate-900 font-semibold'
-                    : 'border-transparent text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {item.label}
-              </button>
-            );
-          })}
-        </nav>
+        {isDesktop && (
+          <View style={styles.navRow}>
+            {NAV_ITEMS.map((item) => {
+              const active = activeTab === item.id;
+              return (
+                <Pressable
+                  key={item.id}
+                  onPress={() => onTabChange(item.id)}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: active }}
+                  style={[styles.navLink, active && styles.navLinkActive]}
+                >
+                  <Text style={[styles.navText, active && styles.navTextActive]}>
+                    {item.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
 
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="md:hidden">
-            <PWAInstallButton variant="compact" />
-          </div>
-          <button
-            type="button"
-            onClick={onCreateNew}
-            className="hidden md:inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-2 text-sm font-medium text-white shadow-xs transition hover:bg-teal-800 active:scale-[0.98] whitespace-nowrap shrink-0"
-          >
-            <Plus className="h-4 w-4" />
-            New Reminder
-          </button>
-        </div>
-      </div>
-    </header>
+        <View style={styles.rightZone}>
+          {!isDesktop && <PWAInstallButton variant="compact" />}
+          {isDesktop && (
+            <Pressable
+              onPress={onCreateNew}
+              accessibilityRole="button"
+              style={styles.ctaBtn}
+            >
+              <PlusIcon size={14} color={COLORS.white} />
+              <Text style={styles.ctaText}>New Reminder</Text>
+            </Pressable>
+          )}
+        </View>
+      </View>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  header: {
+    backgroundColor: COLORS.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  inner: {
+    width: '100%',
+    maxWidth: 1240,
+    alignSelf: 'center',
+    height: 60,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 24,
+  },
+  brandBtn: {
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  brandText: {
+    fontFamily: FONTS.display,
+    fontSize: 19,
+    fontWeight: '800',
+    color: COLORS.inkPrimary,
+    letterSpacing: -0.3,
+  },
+  navRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 24,
+  },
+  navLink: {
+    minHeight: 44,
+    justifyContent: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+    paddingHorizontal: 4,
+  },
+  navLinkActive: {
+    borderBottomColor: COLORS.teal,
+  },
+  navText: {
+    fontFamily: FONTS.sans,
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.inkSecondary,
+  },
+  navTextActive: {
+    color: COLORS.inkPrimary,
+    fontWeight: '700',
+  },
+  rightZone: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  ctaBtn: {
+    minHeight: 44,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: COLORS.teal,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  ctaText: {
+    fontFamily: FONTS.sans,
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.white,
+  },
+});

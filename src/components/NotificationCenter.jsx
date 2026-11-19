@@ -1,6 +1,8 @@
 import React from 'react';
-import { Bell, BellOff, BellRing, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { COLORS, FONTS } from '../theme/tokens';
 import { formatFullDate, getReminderWindowMetrics } from '../utils/dateRange';
+import { BellIcon, GlyphIcon } from './RNIcons';
 
 export const NotificationCenter = ({
   permission,
@@ -20,171 +22,333 @@ export const NotificationCenter = ({
     .slice(0, 6);
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-2xl border border-slate-200/90 bg-white p-5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900 font-display">
-              Android & Browser Push Notifications
-            </h2>
-            <p className="mt-1 text-sm text-slate-600">
+    <View style={styles.container}>
+      <View style={styles.card}>
+        <View style={styles.headerRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Android & Browser Push Notifications</Text>
+            <Text style={styles.subtitle}>
               Receive device alerts when a bank or service window opens, approaches its closing date, or becomes due.
-            </p>
-          </div>
+            </Text>
+          </View>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <View style={styles.btnRow}>
             {permission !== 'granted' && permission !== 'unsupported' && (
-              <button
-                type="button"
-                onClick={onRequestPermission}
-                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 whitespace-nowrap"
-              >
-                <BellRing className="h-4 w-4" />
-                Allow Push Notifications
-              </button>
+              <Pressable onPress={onRequestPermission} style={styles.primaryBtn}>
+                <BellIcon size={15} color={COLORS.white} />
+                <Text style={styles.primaryBtnText}>Allow Push Notifications</Text>
+              </Pressable>
             )}
 
-            <button
-              type="button"
-              onClick={onSendTestNotification}
+            <Pressable
+              onPress={onSendTestNotification}
               disabled={permission !== 'granted'}
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 whitespace-nowrap"
+              style={[
+                styles.secondaryBtn,
+                permission !== 'granted' && styles.disabledBtn,
+              ]}
             >
-              <Bell className="h-4 w-4 text-teal-700" />
-              Send Test Notification
-            </button>
+              <BellIcon size={15} color={COLORS.teal} />
+              <Text style={styles.secondaryBtnText}>Send Test Notification</Text>
+            </Pressable>
 
-            <button
-              type="button"
-              onClick={onRunWindowCheck}
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 whitespace-nowrap"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Check Active Windows
-            </button>
-          </div>
-        </div>
+            <Pressable onPress={onRunWindowCheck} style={styles.secondaryBtn}>
+              <GlyphIcon symbol="↻" size={14} color={COLORS.inkSecondary} />
+              <Text style={styles.secondaryBtnText}>Check Active Windows</Text>
+            </Pressable>
+          </View>
+        </View>
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4 text-sm">
-          <div className="flex items-center gap-2">
-            {permission === 'granted' ? (
-              <CheckCircle2 className="h-4 w-4 text-emerald-700" />
-            ) : (
-              <BellOff className="h-4 w-4 text-amber-700" />
-            )}
-            <span className="font-medium text-slate-800">
-              Device Permission:{' '}
-              {permission === 'granted'
-                ? 'Enabled'
-                : permission === 'denied'
-                  ? 'Blocked in browser settings'
-                  : permission === 'unsupported'
-                    ? 'Not supported in this browser'
-                    : 'Not granted yet'}
-            </span>
-          </div>
+        <View style={styles.statusRow}>
+          <Text style={styles.permissionText}>
+            Device Permission:{' '}
+            {permission === 'granted'
+              ? 'Enabled'
+              : permission === 'denied'
+                ? 'Blocked in browser settings'
+                : permission === 'unsupported'
+                  ? 'Not supported in this browser'
+                  : 'Not granted yet'}
+          </Text>
 
-          <button
-            type="button"
-            onClick={onTogglePushEnabled}
-            className={`min-h-[40px] rounded-xl border px-3.5 py-1.5 text-xs font-medium transition whitespace-nowrap ${
-              pushEnabled
-                ? 'border-teal-700 bg-teal-50 text-teal-800'
-                : 'border-slate-200 bg-slate-50 text-slate-600'
-            }`}
+          <Pressable
+            onPress={onTogglePushEnabled}
+            style={[styles.toggleBtn, pushEnabled && styles.toggleBtnActive]}
           >
-            {pushEnabled ? 'Window Alerts Active' : 'Window Alerts Paused'}
-          </button>
-        </div>
-      </div>
+            <Text
+              style={[styles.toggleText, pushEnabled && styles.toggleTextActive]}
+            >
+              {pushEnabled ? 'Window Alerts Active' : 'Window Alerts Paused'}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <section className="rounded-2xl border border-slate-200/90 bg-white p-5">
-          <h3 className="text-base font-semibold text-slate-900">
-            Upcoming Alert Schedule
-          </h3>
-          <p className="mt-0.5 text-xs text-slate-500">
+      <View style={styles.columns}>
+        <View style={[styles.card, { flex: 1 }]}>
+          <Text style={styles.sectionTitle}>Upcoming Alert Schedule</Text>
+          <Text style={styles.sectionSub}>
             Active and upcoming reminders prioritized by window closing date.
-          </p>
+          </Text>
 
           {upcomingAlerts.length === 0 ? (
-            <p className="py-8 text-center text-sm text-slate-500">
-              No pending reminders scheduled.
-            </p>
+            <Text style={styles.emptyText}>No pending reminders scheduled.</Text>
           ) : (
-            <ul className="mt-4 divide-y divide-slate-100">
-              {upcomingAlerts.map(({ reminder, metrics }) => (
-                <li key={reminder.id} className="flex items-center justify-between gap-3 py-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-slate-900">
-                      {reminder.title}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {reminder.provider} · Ends {formatFullDate(reminder.endDate)}
-                    </p>
-                  </div>
-                  <span
-                    className={`shrink-0 text-xs font-semibold font-mono-nums ${
-                      metrics.status === 'overdue'
-                        ? 'text-rose-700'
-                        : metrics.status === 'due_soon'
-                          ? 'text-amber-700'
-                          : 'text-teal-700'
-                    }`}
-                  >
-                    {metrics.statusLabel}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <View style={styles.list}>
+              {upcomingAlerts.map(({ reminder, metrics }) => {
+                const statusColor =
+                  metrics.status === 'overdue'
+                    ? COLORS.rose
+                    : metrics.status === 'due_soon'
+                      ? COLORS.amber
+                      : COLORS.teal;
+                return (
+                  <View key={reminder.id} style={styles.listRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.rowTitle}>{reminder.title}</Text>
+                      <Text style={styles.rowSub}>
+                        {reminder.provider} · Ends {formatFullDate(reminder.endDate)}
+                      </Text>
+                    </View>
+                    <Text style={[styles.rowStatus, { color: statusColor }]}>
+                      {metrics.statusLabel}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
           )}
-        </section>
+        </View>
 
-        <section className="rounded-2xl border border-slate-200/90 bg-white p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-base font-semibold text-slate-900">
-                Dispatched Alert History
-              </h3>
-              <p className="mt-0.5 text-xs text-slate-500">
+        <View style={[styles.card, { flex: 1 }]}>
+          <View style={styles.historyHeader}>
+            <View>
+              <Text style={styles.sectionTitle}>Dispatched Alert History</Text>
+              <Text style={styles.sectionSub}>
                 Recent notifications delivered to this device.
-              </p>
-            </div>
+              </Text>
+            </View>
             {logs.length > 0 && (
-              <button
-                type="button"
-                onClick={onClearLogs}
-                className="min-h-[36px] rounded-lg px-2.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
-              >
-                Clear History
-              </button>
+              <Pressable onPress={onClearLogs} style={styles.clearBtn}>
+                <Text style={styles.clearText}>Clear History</Text>
+              </Pressable>
             )}
-          </div>
+          </View>
 
           {logs.length === 0 ? (
-            <p className="py-8 text-center text-sm text-slate-500">
+            <Text style={styles.emptyText}>
               No notifications dispatched yet. Allow notifications and send a test alert above.
-            </p>
+            </Text>
           ) : (
-            <ul className="mt-4 divide-y divide-slate-100">
+            <View style={styles.list}>
               {logs.slice(0, 12).map((log) => (
-                <li key={log.id} className="py-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-medium text-slate-900">{log.title}</p>
-                    <span className="shrink-0 text-xs text-slate-400 font-mono-nums">
+                <View key={log.id} style={styles.logRow}>
+                  <View style={styles.logTop}>
+                    <Text style={styles.rowTitle}>{log.title}</Text>
+                    <Text style={styles.logTime}>
                       {new Date(log.sentAt).toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit',
                       })}
-                    </span>
-                  </div>
-                  <p className="mt-0.5 text-xs text-slate-600">{log.body}</p>
-                </li>
+                    </Text>
+                  </View>
+                  <Text style={styles.rowSub}>{log.body}</Text>
+                </View>
               ))}
-            </ul>
+            </View>
           )}
-        </section>
-      </div>
-    </div>
+        </View>
+      </View>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    gap: 16,
+  },
+  card: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 18,
+    gap: 12,
+  },
+  headerRow: {
+    gap: 12,
+  },
+  title: {
+    fontFamily: FONTS.display,
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.inkPrimary,
+  },
+  subtitle: {
+    marginTop: 4,
+    fontFamily: FONTS.sans,
+    fontSize: 13,
+    lineHeight: 19,
+    color: COLORS.inkSecondary,
+  },
+  btnRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  primaryBtn: {
+    minHeight: 44,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: COLORS.teal,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  primaryBtnText: {
+    fontFamily: FONTS.sans,
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.white,
+  },
+  secondaryBtn: {
+    minHeight: 44,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  secondaryBtnText: {
+    fontFamily: FONTS.sans,
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.inkPrimary,
+  },
+  disabledBtn: {
+    opacity: 0.45,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: COLORS.surfaceMuted,
+    paddingTop: 12,
+    gap: 8,
+  },
+  permissionText: {
+    fontFamily: FONTS.sans,
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.inkPrimary,
+  },
+  toggleBtn: {
+    minHeight: 40,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.bgCanvas,
+    justifyContent: 'center',
+  },
+  toggleBtnActive: {
+    borderColor: COLORS.teal,
+    backgroundColor: COLORS.tealBg,
+  },
+  toggleText: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.inkSecondary,
+  },
+  toggleTextActive: {
+    color: COLORS.tealDark,
+  },
+  columns: {
+    gap: 16,
+  },
+  sectionTitle: {
+    fontFamily: FONTS.display,
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.inkPrimary,
+  },
+  sectionSub: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    color: COLORS.inkMuted,
+  },
+  emptyText: {
+    paddingVertical: 24,
+    textAlign: 'center',
+    fontFamily: FONTS.sans,
+    fontSize: 13,
+    color: COLORS.inkMuted,
+  },
+  list: {
+    marginTop: 4,
+  },
+  listRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.surfaceMuted,
+  },
+  rowTitle: {
+    fontFamily: FONTS.sans,
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.inkPrimary,
+  },
+  rowSub: {
+    marginTop: 2,
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    color: COLORS.inkSecondary,
+  },
+  rowStatus: {
+    fontFamily: FONTS.mono,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  historyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  clearBtn: {
+    minHeight: 36,
+    paddingHorizontal: 10,
+    justifyContent: 'center',
+  },
+  clearText: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.inkSecondary,
+  },
+  logRow: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.surfaceMuted,
+  },
+  logTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+  },
+  logTime: {
+    fontFamily: FONTS.mono,
+    fontSize: 11,
+    color: COLORS.inkMuted,
+  },
+});

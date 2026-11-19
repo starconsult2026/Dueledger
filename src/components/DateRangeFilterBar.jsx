@@ -1,6 +1,13 @@
 import React from 'react';
-import { Calendar, Search, X } from 'lucide-react';
-import { CATEGORY_LABELS } from '../constants/reminder';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { COLORS, FONTS } from '../theme/tokens';
+import { DateField } from './DateField';
 
 const PRESETS = [
   { id: 'all', label: 'All Dates' },
@@ -17,122 +24,162 @@ export const DateRangeFilterBar = ({
   customEnd,
   onCustomStartChange,
   onCustomEndChange,
-  category,
-  onCategoryChange,
-  searchQuery,
-  onSearchChange,
   showCompleted,
   onToggleShowCompleted,
 }) => {
   return (
-    <div className="space-y-3 rounded-2xl border border-slate-200/90 bg-white p-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div
-          className="flex items-center gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1"
-          role="tablist"
-          aria-label="Filter by date range"
+    <View style={styles.container}>
+      <View style={styles.topRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.presetTrack}
         >
-          {PRESETS.map((item) => {
-            const active = preset === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() => onPresetChange(item.id)}
-                className={`min-h-[38px] rounded-lg px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
-                  active
-                    ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
+        {PRESETS.map((item) => {
+          const active = preset === item.id;
+          return (
+            <Pressable
+              key={item.id}
+              onPress={() => onPresetChange(item.id)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active }}
+              style={[styles.presetBtn, active && styles.presetBtnActive]}
+            >
+              <Text style={[styles.presetText, active && styles.presetTextActive]}>
                 {item.label}
-              </button>
-            );
-          })}
-        </div>
+              </Text>
+            </Pressable>
+          );
+        })}
+        </ScrollView>
 
-        <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
-          <div className="relative min-w-[200px] flex-1 sm:w-56 sm:flex-initial">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Search bank or service..."
-              aria-label="Search bank or service"
-              className="min-h-[42px] w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-9 pr-8 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:bg-white focus:outline-none"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => onSearchChange('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-400 hover:text-slate-700"
-                aria-label="Clear search"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-
-          <select
-            value={category}
-            onChange={(e) => onCategoryChange(e.target.value)}
-            aria-label="Filter by service category"
-            className="min-h-[42px] rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-teal-600 focus:outline-none"
-          >
-            <option value="all">All Services</option>
-            {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-              <option key={key} value={key}>
-                {label}
-              </option>
-            ))}
-          </select>
-
-          <button
-            type="button"
-            onClick={onToggleShowCompleted}
-            className={`min-h-[42px] rounded-xl border px-3 text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
-              showCompleted
-                ? 'border-teal-700 bg-teal-50 text-teal-800'
-                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-            }`}
+        <Pressable
+          onPress={onToggleShowCompleted}
+          accessibilityRole="button"
+          style={[styles.toggleBtn, showCompleted && styles.toggleBtnActive]}
+        >
+          <Text
+            style={[styles.toggleText, showCompleted && styles.toggleTextActive]}
           >
             {showCompleted ? 'Showing Completed' : 'Hide Completed'}
-          </button>
-        </div>
-      </div>
+          </Text>
+        </Pressable>
+      </View>
 
       {preset === 'custom' && (
-        <div className="flex flex-col gap-3 border-t border-slate-100 pt-3 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-2 text-xs font-medium text-slate-600">
-            <Calendar className="h-4 w-4 text-teal-700" />
-            <span>Date Range Filter:</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
-            <label className="flex flex-col gap-1 text-xs text-slate-500 sm:flex-row sm:items-center">
-              <span>From</span>
-              <input
-                type="date"
+        <View style={styles.customRangeBox}>
+          <Text style={styles.customTitle}>Date Range Filter</Text>
+          <View style={styles.customDateRow}>
+            <View style={styles.dateCol}>
+              <Text style={styles.dateLabel}>From</Text>
+              <DateField
                 value={customStart}
-                onChange={(e) => onCustomStartChange(e.target.value)}
-                className="min-h-[40px] rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 font-mono-nums focus:border-teal-600 focus:bg-white focus:outline-none"
+                onChange={onCustomStartChange}
+                accessibilityLabel="Filter start date"
               />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-slate-500 sm:flex-row sm:items-center">
-              <span>To</span>
-              <input
-                type="date"
+            </View>
+            <View style={styles.dateCol}>
+              <Text style={styles.dateLabel}>To</Text>
+              <DateField
                 value={customEnd}
-                min={customStart || undefined}
-                onChange={(e) => onCustomEndChange(e.target.value)}
-                className="min-h-[40px] rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 font-mono-nums focus:border-teal-600 focus:bg-white focus:outline-none"
+                min={customStart}
+                onChange={onCustomEndChange}
+                accessibilityLabel="Filter end date"
               />
-            </label>
-          </div>
-        </div>
+            </View>
+          </View>
+        </View>
       )}
-    </div>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 16,
+    gap: 12,
+  },
+  topRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  presetTrack: {
+    backgroundColor: COLORS.surfaceMuted,
+    borderRadius: 12,
+    padding: 4,
+    gap: 4,
+  },
+  presetBtn: {
+    minHeight: 36,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  presetBtnActive: {
+    backgroundColor: COLORS.surface,
+  },
+  presetText: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.inkSecondary,
+  },
+  presetTextActive: {
+    color: COLORS.inkPrimary,
+  },
+  toggleBtn: {
+    minHeight: 42,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surface,
+    justifyContent: 'center',
+  },
+  toggleBtnActive: {
+    borderColor: COLORS.teal,
+    backgroundColor: COLORS.tealBg,
+  },
+  toggleText: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.inkSecondary,
+  },
+  toggleTextActive: {
+    color: COLORS.tealDark,
+  },
+  customRangeBox: {
+    borderTopWidth: 1,
+    borderTopColor: COLORS.surfaceMuted,
+    paddingTop: 12,
+    gap: 8,
+  },
+  customTitle: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.inkSecondary,
+  },
+  customDateRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  dateCol: {
+    flex: 1,
+    gap: 4,
+  },
+  dateLabel: {
+    fontFamily: FONTS.sans,
+    fontSize: 11,
+    color: COLORS.inkMuted,
+  },
+});

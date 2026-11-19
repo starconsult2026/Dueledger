@@ -7,6 +7,17 @@
     --font-mono: 'JetBrains Mono', monospace;
   }
 
+  html, body, #root {
+    height: 100%;
+    min-height: 100%;
+  }
+
+  #root {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
   body {
     font-family: var(--font-sans);
     background-color: #f8fafc;

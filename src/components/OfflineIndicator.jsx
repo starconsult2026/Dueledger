@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { WifiOff } from 'lucide-react';
+import { Platform, StyleSheet, Text, View } from 'react-native';
+import { COLORS, FONTS } from '../theme/tokens';
 
 export function useOnlineStatus() {
   const [isOnline, setIsOnline] = useState(
-    typeof navigator !== 'undefined' ? navigator.onLine : true
+    Platform.OS === 'web' && typeof navigator !== 'undefined' ? navigator.onLine : true
   );
 
   useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return undefined;
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
@@ -28,9 +30,26 @@ export const OfflineIndicator = () => {
   if (isOnline) return null;
 
   return (
-    <div className="fixed bottom-20 left-4 z-50 flex items-center gap-2 rounded-xl bg-amber-700 px-3.5 py-2 text-xs font-medium text-white shadow-lg sm:bottom-4">
-      <WifiOff className="h-3.5 w-3.5 shrink-0" />
-      <span>Offline Mode — Local device reminders active</span>
-    </div>
+    <View style={styles.banner}>
+      <Text style={styles.text}>Offline Mode — Local device reminders active</Text>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  banner: {
+    position: 'absolute',
+    bottom: 76,
+    left: 16,
+    borderRadius: 12,
+    backgroundColor: COLORS.amber,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  text: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.white,
+  },
+});

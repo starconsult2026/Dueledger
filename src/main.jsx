@@ -1,8 +1,11 @@
-import { createRoot } from 'react-dom/client';
+import { AppRegistry } from 'react-native';
 import { registerSW } from 'virtual:pwa-register';
 import App from './App.jsx';
 import './index.css';
 
 registerSW({ immediate: true });
 
-createRoot(document.getElementById('root')).render(<App />);
+AppRegistry.registerComponent('DueLedger', () => App);
+AppRegistry.runApplication('DueLedger', {
+  rootTag: document.getElementById('root'),
+});
