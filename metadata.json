@@ -1,0 +1,6 @@
+{
+  "name": "DueLedger",
+  "description": "Personal bank and service date-range reminder PWA for Android with push notifications and Google Calendar sync.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
